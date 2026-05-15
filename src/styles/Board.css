@@ -1,0 +1,137 @@
+.board-container {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(130px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+
+.board-column {
+  background: var(--bg-sidebar);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 300px;
+}
+
+.board-column.drag-over {
+  background: rgba(35, 131, 226, 0.1);
+}
+
+.board-header {
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.board-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: grab;
+  min-width: 0;
+}
+
+.board-card:hover {
+  border-color: var(--accent);
+}
+
+.board-card.type-event {
+  border-left: 3px solid var(--event-color);
+}
+
+.board-card.type-task {
+  border-left: 3px solid var(--accent);
+}
+
+.board-card.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.board-time {
+  margin-left: auto;
+  font-size: 0.7rem;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.board-backlog {
+  margin-top: 16px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.board-backlog-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.board-backlog-hint {
+  font-size: 0.78rem;
+  color: var(--text-sub);
+  margin: -4px 0 12px;
+  line-height: 1.35;
+}
+
+.board-backlog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.board-backlog-drop-zone {
+  min-height: 56px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 2px dashed var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.board-backlog-drop-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(35, 131, 226, 0.08);
+}
+
+.board-backlog-empty {
+  color: var(--text-sub);
+  font-size: 0.85rem;
+  padding: 12px;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.board-backlog-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: grab;
+  min-width: 0;
+}
+
+.board-backlog-card:hover {
+  border-color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .board-container {
+    grid-template-columns: 1fr 1fr;
+  }
+}

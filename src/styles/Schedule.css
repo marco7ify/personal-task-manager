@@ -1,0 +1,62 @@
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+}
+
+.time-label {
+  padding: 12px 12px 12px 0;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  border-top: 1px solid var(--border);
+}
+
+.time-slot {
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  min-height: 60px;
+}
+
+.time-slot-drop {
+  min-height: 60px;
+  transition: 0.2s;
+}
+
+.time-slot-drop.drag-over {
+  background: rgba(35, 131, 226, 0.1);
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: grab;
+}
+
+.schedule-item:hover {
+  filter: brightness(1.1);
+}
+
+.schedule-item.type-event {
+  border-left: 3px solid var(--event-color);
+}
+
+.schedule-item.type-task {
+  border-left: 3px solid var(--accent);
+}
+
+.schedule-inbox-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.schedule-inbox-strip.board-backlog-drop-zone {
+  min-height: 72px;
+}

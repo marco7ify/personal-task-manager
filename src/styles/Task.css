@@ -1,0 +1,244 @@
+.task-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  gap: 12px;
+  transition: 0.15s;
+}
+
+.task-row:hover {
+  background: var(--bg-hover);
+}
+
+.task-row.done {
+  opacity: 0.5;
+}
+
+.task-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-sub);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  transition: 0.15s;
+}
+
+.task-checkbox:hover {
+  border-color: var(--accent);
+}
+
+.task-row.done .task-checkbox {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.event-indicator {
+  width: 4px;
+  height: 18px;
+  background: var(--event-color);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.task-content {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.task-subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding-left: 6px;
+}
+
+.task-subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-sub);
+}
+
+.task-subtask-text.done {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.task-subtask-remove {
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.task-subtask-remove:hover {
+  color: var(--danger);
+}
+
+.task-subtask-inline-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.task-subtask-inline-add .task-control {
+  flex: 1;
+}
+
+.task-text {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  padding: 2px;
+  min-width: 100px;
+  flex: 1;
+}
+
+.task-text:focus {
+  outline: 1px solid var(--accent);
+  border-radius: 4px;
+}
+
+.task-row.done .task-text {
+  text-decoration: line-through;
+  color: var(--text-sub);
+}
+
+.task-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.task-badge {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+.badge-overdue {
+  background: rgba(255, 85, 85, 0.15);
+  color: var(--danger);
+}
+
+.badge-today {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+.badge-high {
+  background: rgba(255, 85, 85, 0.15);
+  color: var(--danger);
+}
+
+.badge-medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+.badge-low {
+  background: rgba(69, 165, 87, 0.15);
+  color: var(--success);
+}
+
+.task-controls {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: 0.15s;
+}
+
+.task-row:hover .task-controls {
+  opacity: 1;
+}
+
+.task-control {
+  padding: 4px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-sub);
+}
+
+.task-edit {
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.task-edit:hover {
+  background: rgba(35, 131, 226, 0.12);
+  color: var(--accent);
+}
+
+.task-subtask-add {
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.task-subtask-add:hover {
+  background: rgba(35, 131, 226, 0.12);
+  color: var(--accent);
+}
+
+.task-subtasks-toggle {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.task-subtasks-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.task-delete {
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.task-delete:hover {
+  background: rgba(255, 85, 85, 0.1);
+  color: var(--danger);
+}

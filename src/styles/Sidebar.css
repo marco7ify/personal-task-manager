@@ -1,0 +1,202 @@
+.sidebar {
+  width: 260px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  padding: 8px 12px;
+  margin-bottom: 20px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.sidebar-header {
+  font-weight: 600;
+  color: var(--text-sub);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  margin: 16px 12px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-add-btn {
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 1rem;
+}
+
+.sidebar-add-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.sidebar-views-settings {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.sidebar-views-settings:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text-sub);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.9rem;
+  transition: 0.15s;
+}
+
+.sidebar-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.sidebar-item.active {
+  background: rgba(35, 131, 226, 0.15);
+  color: var(--accent);
+}
+
+.sidebar-item.danger:hover {
+  background: rgba(255, 85, 85, 0.1);
+  color: var(--danger);
+}
+
+.sidebar-count {
+  background: var(--bg-input);
+  color: var(--text-sub);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.sidebar-ring {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-project-edit {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+  margin-left: auto;
+}
+
+.sidebar-item:hover .sidebar-project-edit {
+  opacity: 1;
+}
+
+.sidebar-project-edit:hover {
+  background: var(--bg-hover);
+}
+
+/* Project name — allow it to shrink so badges don't overflow */
+.sidebar-project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Header action group (🏷 + add) */
+.sidebar-header-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+/* Compact badges next to project name */
+.sidebar-project-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-sub);
+  line-height: 1.5;
+  flex-shrink: 0;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.sidebar-project-badge.inbox-badge {
+  cursor: default;
+}
+
+.sidebar-project-badge.inbox-badge.highlighted {
+  background: rgba(255, 85, 85, 0.18);
+  color: var(--danger, #ff5555);
+  cursor: pointer;
+  animation: badge-pulse 1.8s ease-in-out infinite;
+}
+
+.sidebar-project-badge.inbox-badge.highlighted:hover {
+  background: rgba(255, 85, 85, 0.30);
+}
+
+.sidebar-project-badge.today-badge {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+    transition: left 0.3s;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+}

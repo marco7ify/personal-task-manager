@@ -1,0 +1,45 @@
+.inbox-rules-panel {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-sub);
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.inbox-rules-sidebar {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.inbox-rules-strip {
+  margin: -4px 0 12px;
+}
+
+.inbox-rules-title {
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+
+.inbox-rules-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.inbox-rules-list li {
+  margin-bottom: 4px;
+}
+
+.inbox-rules-contrast {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+.inbox-rules-strip .inbox-rules-contrast {
+  font-size: 0.74rem;
+}

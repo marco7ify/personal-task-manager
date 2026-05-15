@@ -1,0 +1,63 @@
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.task-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.task-input:focus {
+  outline: none;
+}
+
+.input-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.input-select,
+.input-date,
+.input-time {
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-sub);
+  font-size: 0.8rem;
+}
+
+.search-input {
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-main);
+  width: 200px;
+  font-size: 0.9rem;
+}
+
+.search-input::placeholder {
+  color: var(--text-sub);
+}
+
+@media (max-width: 768px) {
+  .search-input {
+    width: 100%;
+  }
+}

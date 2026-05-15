@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+*.log
+
+# Local env — never commit real secrets
+.env
+
+# SQLite database (lives on the server, not in git)
+data/
+*.db
+*.db-shm
+*.db-wal
