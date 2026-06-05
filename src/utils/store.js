@@ -7,7 +7,8 @@ const STORAGE_KEYS = {
   propertyDefs: 'ut_propertyDefs_v1',
   viewConfigs: 'ut_viewConfigs_v1',
   pages: 'ut_pages_v1',
-  semesters: 'ut_semesters_v1'
+  semesters: 'ut_semesters_v1',
+  jobs: 'ut_jobs_v1'
 };
 
 // Property types supported by the system
@@ -92,6 +93,7 @@ export const Store = {
   projects: [],
   pages: [],        // Notion-style pages (notebooks + nested pages)
   semesters: [],    // School semesters that group course projects
+  jobs: [],         // Job applications and opportunities
   propertyDefs: [], // Custom property definitions
   viewConfigs: {},  // Saved view configurations
   settings: {
@@ -108,7 +110,17 @@ export const Store = {
     academicCatalog: [],
     /** Mastery tracking settings */
     masteryEnabled: true,
-    masteryIgnoreUntracked: true
+    masteryIgnoreUntracked: true,
+    /** AI Intake preferences. API keys are intentionally kept out of synced Store data. */
+    aiDefaultModel: 'gpt-5.5',
+    aiCustomModel: '',
+    aiAllowNewDestinations: false,
+    aiCategories: {
+      tasks: true,
+      events: true,
+      jobs: true,
+      pages: true
+    }
   },
 
   /** Shared post-load normalisation + migrations */
@@ -116,6 +128,24 @@ export const Store = {
     this.cleanupOrphanedProjectTasks();
     this.items.forEach(i  => { if (!i.customProps) i.customProps = {}; });
     if (!Array.isArray(this.semesters)) this.semesters = [];
+    if (!Array.isArray(this.jobs)) this.jobs = [];
+    this.jobs = this.jobs
+      .filter((job) => job && job.id)
+      .map((job) => ({
+        id: job.id,
+        company: String(job.company || '').trim(),
+        role: String(job.role || '').trim(),
+        link: String(job.link || '').trim(),
+        status: ['interested', 'applied', 'interviewing', 'accepted', 'rejected'].includes(job.status)
+          ? job.status
+          : 'interested',
+        payRate: String(job.payRate || '').trim(),
+        schedule: String(job.schedule || '').trim(),
+        location: String(job.location || '').trim(),
+        notes: String(job.notes || '').trim(),
+        createdAt: job.createdAt || Date.now(),
+        updatedAt: job.updatedAt || job.createdAt || Date.now()
+      }));
     this.semesters = this.semesters
       .filter((s) => s && s.id)
       .map((s) => ({
@@ -170,6 +200,15 @@ export const Store = {
     if (!Array.isArray(this.settings.academicCatalog)) this.settings.academicCatalog = [];
     if (typeof this.settings.masteryEnabled !== 'boolean') this.settings.masteryEnabled = true;
     if (typeof this.settings.masteryIgnoreUntracked !== 'boolean') this.settings.masteryIgnoreUntracked = true;
+    if (typeof this.settings.aiDefaultModel !== 'string') this.settings.aiDefaultModel = 'gpt-5.5';
+    if (typeof this.settings.aiCustomModel !== 'string') this.settings.aiCustomModel = '';
+    if (typeof this.settings.aiAllowNewDestinations !== 'boolean') this.settings.aiAllowNewDestinations = false;
+    this.settings.aiCategories = {
+      tasks: this.settings.aiCategories?.tasks !== false,
+      events: this.settings.aiCategories?.events !== false,
+      jobs: this.settings.aiCategories?.jobs !== false,
+      pages: this.settings.aiCategories?.pages !== false
+    };
     if (!Array.isArray(this.pages)) this.pages = [];
     this.pages.forEach((p) => {
       if (!Array.isArray(p.blocks)) p.blocks = [];
@@ -242,6 +281,7 @@ export const Store = {
       const viewConfigs  = localStorage.getItem(STORAGE_KEYS.viewConfigs);
       const pages        = localStorage.getItem(STORAGE_KEYS.pages);
       const semesters    = localStorage.getItem(STORAGE_KEYS.semesters);
+      const jobs         = localStorage.getItem(STORAGE_KEYS.jobs);
 
       if (items) this.items = JSON.parse(items);
       else this.seed();
@@ -252,6 +292,7 @@ export const Store = {
       if (settings)     this.settings     = { ...this.settings, ...JSON.parse(settings) };
       if (pages)        this.pages        = JSON.parse(pages);
       if (semesters)    this.semesters    = JSON.parse(semesters);
+      if (jobs)         this.jobs         = JSON.parse(jobs);
       this._postLoad();
     } catch (e) {
       console.error('Load error:', e);
@@ -273,6 +314,7 @@ export const Store = {
       if (data.viewConfigs)  this.viewConfigs  = data.viewConfigs  ?? {};
       if (data.pages)        this.pages        = data.pages        ?? [];
       if (data.semesters)    this.semesters    = data.semesters    ?? [];
+      if (data.jobs)         this.jobs         = data.jobs         ?? [];
 
       // If DB is empty (fresh deploy), seed and push initial data
       if (!data.items || data.items.length === 0) {
@@ -300,6 +342,7 @@ export const Store = {
       localStorage.setItem(STORAGE_KEYS.viewConfigs,  JSON.stringify(this.viewConfigs));
       localStorage.setItem(STORAGE_KEYS.pages,        JSON.stringify(this.pages || []));
       localStorage.setItem(STORAGE_KEYS.semesters,    JSON.stringify(this.semesters || []));
+      localStorage.setItem(STORAGE_KEYS.jobs,         JSON.stringify(this.jobs || []));
     } catch (e) {
       console.error('localStorage error:', e);
     }
@@ -316,6 +359,7 @@ export const Store = {
       viewConfigs: this.viewConfigs,
       pages: this.pages || [],
       semesters: this.semesters || [],
+      jobs: this.jobs || [],
     }).catch(err => console.warn('Server save failed:', err.message));
   },
 
@@ -351,6 +395,7 @@ export const Store = {
         expanded: true
       }
     ];
+    this.jobs = [];
 
     this.projects = [
       {
@@ -756,6 +801,7 @@ export const Store = {
           viewConfigs: this.viewConfigs,
           pages: this.pages || [],
           semesters: this.semesters || [],
+          jobs: this.jobs || [],
         });
       }
     } catch (e) {

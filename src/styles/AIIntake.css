@@ -1,0 +1,241 @@
+.ai-intake-view {
+  max-width: 1280px;
+}
+
+.ai-intake-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(440px, 1.3fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.ai-intake-panel,
+.ai-review-panel,
+.ai-suggestion-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.ai-intake-panel {
+  padding: 16px;
+  position: sticky;
+  top: 0;
+}
+
+.ai-control-grid,
+.ai-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ai-control-grid label,
+.ai-card-grid label,
+.ai-wide-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text-sub);
+  font-size: 0.76rem;
+}
+
+.ai-control-grid input,
+.ai-control-grid select,
+.ai-card-grid input,
+.ai-card-grid select,
+.ai-wide-field textarea,
+.ai-intake-textarea,
+.ai-title-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-main);
+  padding: 8px 9px;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.ai-control-grid input:focus,
+.ai-control-grid select:focus,
+.ai-card-grid input:focus,
+.ai-card-grid select:focus,
+.ai-wide-field textarea:focus,
+.ai-intake-textarea:focus,
+.ai-title-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ai-switch {
+  grid-column: 1 / -1;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.ai-switch input,
+.ai-chip input,
+.ai-suggestion-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.ai-category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--text-main);
+  background: var(--bg-input);
+  font-size: 0.8rem;
+}
+
+.ai-intake-textarea {
+  min-height: 330px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.ai-status-row {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ai-status {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text-sub);
+  background: var(--bg-input);
+  font-size: 0.82rem;
+}
+
+.ai-status.error,
+.ai-warning {
+  color: var(--danger);
+}
+
+.ai-status.success {
+  color: var(--success);
+}
+
+.ai-review-panel {
+  overflow: hidden;
+}
+
+.ai-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ai-review-header strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.ai-review-header span {
+  color: var(--text-sub);
+  font-size: 0.78rem;
+}
+
+.ai-review-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-suggestion-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.ai-suggestion-card {
+  padding: 12px;
+}
+
+.ai-suggestion-card.selected {
+  border-color: var(--accent);
+}
+
+.ai-suggestion-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.ai-title-input {
+  font-weight: 600;
+}
+
+.ai-confidence {
+  color: var(--text-sub);
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+
+.ai-wide-field {
+  margin-top: 10px;
+}
+
+.ai-wide-field textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.ai-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ai-warning {
+  margin-right: auto;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 980px) {
+  .ai-intake-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-intake-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 620px) {
+  .ai-control-grid,
+  .ai-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-review-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

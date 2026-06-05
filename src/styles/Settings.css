@@ -19,6 +19,11 @@
   margin-bottom: 16px;
 }
 
+.settings-row-stacked {
+  align-items: stretch;
+  flex-direction: column;
+}
+
 .settings-label {
   min-width: 200px;
   color: var(--text-sub);
@@ -31,6 +36,16 @@
   border-radius: 6px;
   color: var(--text-main);
   width: 80px;
+}
+
+.settings-input-wide {
+  width: min(100%, 420px);
+}
+
+.settings-ai-categories {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .import-tasks-modal {
@@ -78,4 +93,10 @@
   height: 18px;
   cursor: pointer;
   accent-color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .settings-ai-categories {
+    grid-template-columns: 1fr;
+  }
 }

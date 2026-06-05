@@ -163,6 +163,12 @@
   color: var(--success);
 }
 
+.task-badge-note {
+  background: rgba(35, 131, 226, 0.14);
+  border: 1px solid rgba(35, 131, 226, 0.28);
+  color: var(--accent);
+}
+
 .task-controls {
   display: flex;
   gap: 6px;

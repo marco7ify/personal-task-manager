@@ -305,6 +305,29 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
         />
       )}
 
+      <div className="sidebar-header">
+        <span>AI</span>
+      </div>
+      <button
+        className={`sidebar-item ${currentView === 'aiIntake' ? 'active' : ''}`}
+        onClick={() => onNavigate('aiIntake')}
+      >
+        <span>AI</span>
+        <span>Intake</span>
+      </button>
+
+      <div className="sidebar-header">
+        <span>Jobs</span>
+      </div>
+      <button
+        className={`sidebar-item ${currentView === 'jobs' ? 'active' : ''}`}
+        onClick={() => onNavigate('jobs')}
+      >
+        <span>Jobs</span>
+        <span>Applications</span>
+        <span className="sidebar-count">{(Store.jobs || []).length}</span>
+      </button>
+
       <div style={{ flex: 1 }} />
 
       <button className="sidebar-item" onClick={() => onNavigate('settings')}>

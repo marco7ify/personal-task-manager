@@ -13,6 +13,8 @@ import { PageView } from './components/PageView';
 import { CourseView } from './components/CourseView';
 import { ExamView } from './components/ExamView';
 import { SemesterView } from './components/SemesterView';
+import { JobsView } from './components/JobsView';
+import { AIIntakeView } from './components/AIIntakeView';
 import { getSemesters, isCourseProject, UNASSIGNED_SEMESTER_ID } from './utils/school';
 import { ListView } from './components/views/ListView';
 import { ScheduleView } from './components/views/ScheduleView';
@@ -180,6 +182,8 @@ function App() {
       return { label: page?.title || 'Page', icon: page?.icon || '📄' };
     }
     if (context.view === 'settings') return { label: 'Settings', icon: '⚙️' };
+    if (context.view === 'jobs') return { label: 'Jobs', icon: 'Jobs' };
+    if (context.view === 'aiIntake') return { label: 'AI Intake', icon: 'AI' };
     const labels = {
       inbox: 'Inbox',
       today: 'Today',
@@ -356,6 +360,14 @@ function App() {
   const renderView = () => {
     if (currentView === 'settings') {
       return <Settings onBack={() => handleNavigate('tasks', 'all')} onUpdate={handleUpdate} />;
+    }
+
+    if (currentView === 'jobs') {
+      return <JobsView onUpdate={handleUpdate} />;
+    }
+
+    if (currentView === 'aiIntake') {
+      return <AIIntakeView onUpdate={handleUpdate} />;
     }
 
     if (currentView === 'page') {

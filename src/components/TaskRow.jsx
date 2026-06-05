@@ -11,6 +11,11 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
 
   const isVirtual = !!item.__virtual;
   const inlineProperties = getInlineProperties(ENTITY_TYPES.TASK);
+  const noteText = String(item.customProps?.prop_notes || item.notes || '').trim();
+  const notePreview = noteText.replace(/\s+/g, ' ');
+  const noteTitle = notePreview.length > 160
+    ? `Notes: ${notePreview.slice(0, 160)}...`
+    : `Notes: ${notePreview}`;
 
   const getDueBadge = () => {
     if (!item.date || item.done) return '';
@@ -32,6 +37,10 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
   };
 
   const renderCustomPropertyBadge = (propertyDef) => {
+    if (propertyDef.id === 'prop_notes') {
+      return null;
+    }
+
     const value = item.customProps?.[propertyDef.id];
     if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
       return null;
@@ -227,6 +236,11 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
             <span className="task-badge">🔁 {item.recurrence}</span>
           )}
           {item.time && <span className="task-badge">🕐 {item.time}</span>}
+          {noteText && (
+            <span className="task-badge task-badge-note" title={noteTitle}>
+              Note
+            </span>
+          )}
           {showProject && (
             <span className="task-badge" title={project ? project.name : 'No folder'}>
               {project ? `${project.icon} ${project.name}` : '📥 No folder'}

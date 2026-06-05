@@ -24,7 +24,7 @@ const stmtUpsert = db.prepare(
   'INSERT OR REPLACE INTO store (key, value, updated_at) VALUES (?, ?, unixepoch())'
 );
 
-const KEYS = ['items', 'projects', 'settings', 'propertyDefs', 'viewConfigs', 'pages', 'semesters'];
+const KEYS = ['items', 'projects', 'settings', 'propertyDefs', 'viewConfigs', 'pages', 'semesters', 'jobs'];
 
 export function getAll() {
   const result = {};

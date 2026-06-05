@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Store } from '../utils/store';
 import { mergeImportedTasks, parseImportedTaskText } from '../utils/importParser';
+import { AI_MODEL_PRESETS, getStoredOpenAiKey, setStoredOpenAiKey } from '../utils/aiIntake';
 import { PropertySettings } from './PropertySettings';
 import '../styles/Settings.css';
 import '../styles/Button.css';
@@ -9,6 +10,18 @@ import '../styles/Modal.css';
 export function Settings({ onBack, onUpdate }) {
   const [showPropertySettings, setShowPropertySettings] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [openAiKey, setOpenAiKey] = useState(getStoredOpenAiKey());
+  const [aiDefaultModel, setAiDefaultModel] = useState(Store.settings.aiDefaultModel || 'gpt-5.5');
+  const [aiCustomModel, setAiCustomModel] = useState(Store.settings.aiCustomModel || '');
+  const [aiAllowNewDestinations, setAiAllowNewDestinations] = useState(
+    Store.settings.aiAllowNewDestinations === true
+  );
+  const [aiCategories, setAiCategories] = useState({
+    tasks: Store.settings.aiCategories?.tasks !== false,
+    events: Store.settings.aiCategories?.events !== false,
+    jobs: Store.settings.aiCategories?.jobs !== false,
+    pages: Store.settings.aiCategories?.pages !== false
+  });
 
   const handleSave = () => {
     Store.settings.startHour = parseInt(document.getElementById('settingStartHour').value, 10);
@@ -17,6 +30,11 @@ export function Settings({ onBack, onUpdate }) {
     Store.settings.theme = document.getElementById('settingTheme').value;
     Store.settings.masteryEnabled = document.getElementById('settingMasteryEnabled').checked;
     Store.settings.masteryIgnoreUntracked = document.getElementById('settingMasteryIgnoreUntracked').checked;
+    Store.settings.aiDefaultModel = aiDefaultModel;
+    Store.settings.aiCustomModel = aiCustomModel.trim();
+    Store.settings.aiAllowNewDestinations = aiAllowNewDestinations;
+    Store.settings.aiCategories = aiCategories;
+    setStoredOpenAiKey(openAiKey);
     Store.save();
     document.documentElement.setAttribute('data-theme', Store.settings.theme);
     onUpdate?.();
@@ -30,6 +48,79 @@ export function Settings({ onBack, onUpdate }) {
         <button className="btn btn-secondary btn-sm" onClick={onBack}>
           ← Back
         </button>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-title">AI Intake</h3>
+        <div className="settings-row settings-row-stacked">
+          <label className="settings-label" htmlFor="settingOpenAiKey">OpenAI API key</label>
+          <input
+            type="password"
+            className="settings-input settings-input-wide"
+            id="settingOpenAiKey"
+            value={openAiKey}
+            onChange={(e) => setOpenAiKey(e.target.value)}
+            placeholder="sk-..."
+            autoComplete="off"
+          />
+        </div>
+        <div className="settings-row settings-row-stacked">
+          <label className="settings-label" htmlFor="settingAiModel">Default AI model</label>
+          <select
+            className="input-select settings-input-wide"
+            id="settingAiModel"
+            value={aiDefaultModel}
+            onChange={(e) => setAiDefaultModel(e.target.value)}
+          >
+            {AI_MODEL_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.label}: {preset.model === 'custom' ? 'Custom model' : preset.model}
+              </option>
+            ))}
+          </select>
+        </div>
+        {aiDefaultModel === 'custom' && (
+          <div className="settings-row settings-row-stacked">
+            <label className="settings-label" htmlFor="settingAiCustomModel">Custom model ID</label>
+            <input
+              type="text"
+              className="settings-input settings-input-wide"
+              id="settingAiCustomModel"
+              value={aiCustomModel}
+              onChange={(e) => setAiCustomModel(e.target.value)}
+              placeholder="gpt-5.4-mini"
+            />
+          </div>
+        )}
+        <div className="settings-row">
+          <label className="settings-checkbox-label">
+            <input
+              type="checkbox"
+              checked={aiAllowNewDestinations}
+              onChange={(e) => setAiAllowNewDestinations(e.target.checked)}
+            />
+            <span>Allow AI to suggest new folders, notebooks, and pages by default</span>
+          </label>
+        </div>
+        <div className="settings-ai-categories" aria-label="Default AI categories">
+          {[
+            ['tasks', 'Tasks / projects'],
+            ['events', 'Appointments / events'],
+            ['jobs', 'Jobs'],
+            ['pages', 'Notebooks / ideas']
+          ].map(([key, label]) => (
+            <label key={key} className="settings-checkbox-label">
+              <input
+                type="checkbox"
+                checked={aiCategories[key]}
+                onChange={(e) =>
+                  setAiCategories((current) => ({ ...current, [key]: e.target.checked }))
+                }
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <div className="settings-section">
