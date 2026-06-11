@@ -5,6 +5,7 @@ import {
   getChildrenMap,
   getDescendantPageIds
 } from '../utils/pages';
+import { PAGE_TEMPLATES, createPageFromTemplate } from '../utils/templates';
 import { getCoursesLinkedToPage } from '../utils/school';
 
 /**
@@ -21,6 +22,7 @@ export function NotebooksTree({
   emptyLabel = '+ New notebook'
 }) {
   const [hoveredId, setHoveredId] = useState(null);
+  const [showRootTemplates, setShowRootTemplates] = useState(false);
 
   const pages = Array.isArray(Store.pages) ? Store.pages : [];
   const childrenMap = getChildrenMap(pages);
@@ -60,6 +62,15 @@ export function NotebooksTree({
     const parent = Store.pages.find((p) => p.id === parentId);
     if (parent) parent.expanded = true;
     Store.save();
+    onUpdate?.();
+    onNavigate?.('page', null, null, page.id);
+  };
+
+  const handleAddRootTemplate = (template) => {
+    const page = createPageFromTemplate(template);
+    Store.pages.push(page);
+    Store.save();
+    setShowRootTemplates(false);
     onUpdate?.();
     onNavigate?.('page', null, null, page.id);
   };
@@ -175,6 +186,31 @@ export function NotebooksTree({
         <span>{sectionTitle}</span>
         {allowAddRoot && (
           <div className="sidebar-header-actions">
+            <div className="notebook-template-wrap">
+              <button
+                className="sidebar-add-btn"
+                onClick={() => setShowRootTemplates((value) => !value)}
+                title="New notebook from template"
+                aria-label="New notebook from template"
+              >
+                T
+              </button>
+              {showRootTemplates && (
+                <div className="notebook-template-menu">
+                  {PAGE_TEMPLATES.map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      className="notebook-template-option"
+                      onClick={() => handleAddRootTemplate(template)}
+                    >
+                      <strong>{template.title}</strong>
+                      <span>{template.description}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               className="sidebar-add-btn"
               onClick={handleAddRoot}

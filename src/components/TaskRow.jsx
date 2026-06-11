@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Store, getToday } from '../utils/store';
 import { getInlineProperties, getPropertyValue, setPropertyValue, getOption, PROPERTY_TYPES, ENTITY_TYPES } from '../utils/properties';
 import '../styles/Task.css';
 
-export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false, onUpdate }) {
+export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false, onUpdate, showInlineNotes = false }) {
   const project = item.pid ? Store.projects.find(p => p.id === item.pid) : null;
   const bgColor = project
     ? `rgba(${hexToRgba(project.color)}, ${getPriorityAlpha(item.priority || 'low')})`
@@ -151,6 +151,16 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
   const [showInlineAdd, setShowInlineAdd] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
   const [subtasksExpanded, setSubtasksExpanded] = useState(false);
+  const [notesPopupOpen, setNotesPopupOpen] = useState(false);
+
+  useEffect(() => {
+    if (!notesPopupOpen) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setNotesPopupOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [notesPopupOpen]);
 
   const handleAddSubtask = () => {
     const text = newSubtask.trim();
@@ -237,9 +247,17 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
           )}
           {item.time && <span className="task-badge">🕐 {item.time}</span>}
           {noteText && (
-            <span className="task-badge task-badge-note" title={noteTitle}>
+            <button
+              type="button"
+              className="task-badge task-badge-note"
+              title={noteTitle}
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesPopupOpen(true);
+              }}
+            >
               Note
-            </span>
+            </button>
           )}
           {showProject && (
             <span className="task-badge" title={project ? project.name : 'No folder'}>
@@ -269,6 +287,11 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
           {/* Custom property badges */}
           {inlineProperties.map(prop => renderCustomPropertyBadge(prop))}
         </div>
+        {showInlineNotes && noteText && (
+          <div className="task-inline-note">
+            {noteText}
+          </div>
+        )}
         {(subtasks.length > 0 && subtasksExpanded) && (
           <div className="task-subtasks">
             {subtasks.map((st, idx) => (
@@ -394,6 +417,28 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
           <button className="task-delete" onClick={() => onDelete(item.id)} title="Delete">
             🗑
           </button>
+        </div>
+      )}
+
+      {notesPopupOpen && (
+        <div className="task-note-popup-overlay" onClick={() => setNotesPopupOpen(false)}>
+          <div className="task-note-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="task-note-popup-header">
+              <div>
+                <div className="task-note-popup-label">Notes</div>
+                <div className="task-note-popup-title">{item.text}</div>
+              </div>
+              <button
+                type="button"
+                className="task-note-popup-close"
+                onClick={() => setNotesPopupOpen(false)}
+                aria-label="Close notes"
+              >
+                x
+              </button>
+            </div>
+            <div className="task-note-popup-body">{noteText}</div>
+          </div>
         </div>
       )}
     </div>

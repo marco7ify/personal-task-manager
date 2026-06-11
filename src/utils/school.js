@@ -23,7 +23,8 @@ export const SCHOOL_ITEM_TYPES = {
   ASSIGNMENT: 'assignment',
   QUIZ: 'quiz',
   EXAM: 'exam',
-  HOMEWORK: 'homework'
+  HOMEWORK: 'homework',
+  STUDY_SESSION: 'study_session'
 };
 
 export const SCHOOL_ITEM_TYPE_VALUES = Object.values(SCHOOL_ITEM_TYPES);
@@ -32,14 +33,16 @@ export const SCHOOL_ITEM_LABELS = {
   [SCHOOL_ITEM_TYPES.ASSIGNMENT]: 'Assignment',
   [SCHOOL_ITEM_TYPES.QUIZ]: 'Quiz',
   [SCHOOL_ITEM_TYPES.EXAM]: 'Exam',
-  [SCHOOL_ITEM_TYPES.HOMEWORK]: 'Homework'
+  [SCHOOL_ITEM_TYPES.HOMEWORK]: 'Homework',
+  [SCHOOL_ITEM_TYPES.STUDY_SESSION]: 'Study Session'
 };
 
 export const SCHOOL_ITEM_ICONS = {
   [SCHOOL_ITEM_TYPES.ASSIGNMENT]: '📝',
   [SCHOOL_ITEM_TYPES.QUIZ]: '✏️',
   [SCHOOL_ITEM_TYPES.EXAM]: '📘',
-  [SCHOOL_ITEM_TYPES.HOMEWORK]: '📒'
+  [SCHOOL_ITEM_TYPES.HOMEWORK]: '📒',
+  [SCHOOL_ITEM_TYPES.STUDY_SESSION]: '🎯'
 };
 
 export const COURSE_STATUSES = [

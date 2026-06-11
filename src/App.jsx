@@ -15,6 +15,12 @@ import { ExamView } from './components/ExamView';
 import { SemesterView } from './components/SemesterView';
 import { JobsView } from './components/JobsView';
 import { AIIntakeView } from './components/AIIntakeView';
+import { AIReschedulerPanel } from './components/AIReschedulerPanel';
+import { DashboardView } from './components/DashboardView';
+import { DailyReviewView } from './components/DailyReviewView';
+import { StudyQueueView } from './components/StudyQueueView';
+import { HelpView } from './components/HelpView';
+import { NotificationCenter } from './components/NotificationCenter';
 import { getSemesters, isCourseProject, UNASSIGNED_SEMESTER_ID } from './utils/school';
 import { ListView } from './components/views/ListView';
 import { ScheduleView } from './components/views/ScheduleView';
@@ -30,7 +36,7 @@ import './styles/ViewConfig.css';
 import './styles/Mastery.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState('tasks');
+  const [currentView, setCurrentView] = useState('home');
   const [currentFilter, setCurrentFilter] = useState('all');
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [currentProjectFilter, setCurrentProjectFilter] = useState('all');
@@ -47,6 +53,8 @@ function App() {
   const [counts, setCounts] = useState({});
   const [globalMonthProjectIds, setGlobalMonthProjectIds] = useState([]);
   const [globalMonthSemesterIds, setGlobalMonthSemesterIds] = useState([]);
+  const [showInlineNotes, setShowInlineNotes] = useState(false);
+  const [inboxAiOpen, setInboxAiOpen] = useState(false);
   const [lastViewContext, setLastViewContext] = useState(null);
   const [schoolPagePopupId, setSchoolPagePopupId] = useState(null);
   const [schoolPagePopupExpanded, setSchoolPagePopupExpanded] = useState(false);
@@ -59,6 +67,7 @@ function App() {
     const t = Store.settings.theme || 'dark';
     document.documentElement.setAttribute('data-theme', t);
     setTheme(t);
+    setShowInlineNotes(!!Store.settings.showInlineNotes);
     setCounts(getCounts(Store.items, Store.settings.viewExcludedProjectIds || []));
     setAppState('ready');
   };
@@ -87,6 +96,13 @@ function App() {
   const handleOpenPropertyPanel = (itemId) => {
     const id = typeof itemId === 'number' ? itemId : parseInt(itemId, 10);
     if (!Number.isNaN(id)) setPropertyPanelItemId(id);
+  };
+
+  const handleToggleInlineNotes = () => {
+    const next = !showInlineNotes;
+    Store.settings.showInlineNotes = next;
+    Store.save();
+    setShowInlineNotes(next);
   };
 
   /** Week board / month calendar: open property panel (virtual occurrences → base task) */
@@ -182,8 +198,8 @@ function App() {
       return { label: page?.title || 'Page', icon: page?.icon || '📄' };
     }
     if (context.view === 'settings') return { label: 'Settings', icon: '⚙️' };
+    if (context.view === 'studyQueue') return { label: 'Study Queue', icon: 'Study' };
     if (context.view === 'jobs') return { label: 'Jobs', icon: 'Jobs' };
-    if (context.view === 'aiIntake') return { label: 'AI Intake', icon: 'AI' };
     const labels = {
       inbox: 'Inbox',
       today: 'Today',
@@ -358,16 +374,50 @@ function App() {
   }[filter] || 'Tasks';
 
   const renderView = () => {
+    if (currentView === 'home') {
+      return (
+        <DashboardView
+          onNavigate={handleNavigate}
+          onOpenItem={handleOpenPropertyPanel}
+        />
+      );
+    }
+
+    if (currentView === 'dailyReview') {
+      return (
+        <DailyReviewView
+          onNavigate={handleNavigate}
+          onOpenItem={handleOpenPropertyPanel}
+          onUpdate={handleUpdate}
+        />
+      );
+    }
+
+    if (currentView === 'studyQueue') {
+      return (
+        <StudyQueueView
+          onNavigate={handleNavigate}
+          onUpdate={handleUpdate}
+        />
+      );
+    }
+
     if (currentView === 'settings') {
       return <Settings onBack={() => handleNavigate('tasks', 'all')} onUpdate={handleUpdate} />;
     }
 
-    if (currentView === 'jobs') {
-      return <JobsView onUpdate={handleUpdate} />;
+    if (currentView === 'help') {
+      return (
+        <HelpView
+          onNavigate={handleNavigate}
+          onNavigateBack={handleNavigateBack}
+          onUpdate={handleUpdate}
+        />
+      );
     }
 
-    if (currentView === 'aiIntake') {
-      return <AIIntakeView onUpdate={handleUpdate} />;
+    if (currentView === 'jobs') {
+      return <JobsView onUpdate={handleUpdate} />;
     }
 
     if (currentView === 'page') {
@@ -440,6 +490,13 @@ function App() {
                   </button>
                 ))}
               </div>
+              <button
+                className={`view-toggle standalone ${showInlineNotes ? 'active' : ''}`}
+                onClick={handleToggleInlineNotes}
+                title={showInlineNotes ? 'Hide notes under tasks/events' : 'Show notes under tasks/events'}
+              >
+                Notes inline
+              </button>
               <button className="btn btn-secondary btn-sm" onClick={() => handleNavigate('tasks', 'all')}>
                 ← Back
               </button>
@@ -514,6 +571,7 @@ function App() {
               viewId={currentViewId}
               onUpdate={handleUpdate}
               groupBySubfolder
+              showInlineNotes={showInlineNotes}
             />
           )}
         </>
@@ -537,6 +595,13 @@ function App() {
               onSelectView={setCurrentViewId}
               onConfigureView={setConfiguringViewId}
             />
+            <button
+              className={`view-toggle standalone ${showInlineNotes ? 'active' : ''}`}
+              onClick={handleToggleInlineNotes}
+              title={showInlineNotes ? 'Hide notes under tasks/events' : 'Show notes under tasks/events'}
+            >
+              Notes inline
+            </button>
             <button
               className="btn-icon"
               onClick={() => {
@@ -674,7 +739,30 @@ function App() {
           </div>
         )}
 
-        {currentView === 'tasks' && currentFilter === 'inbox' && <SidebarInboxRulesHint />}
+        {currentView === 'tasks' && currentFilter === 'inbox' && (
+          <>
+            <section className={`inbox-ai-panel ${inboxAiOpen ? 'open' : ''}`}>
+              <button
+                type="button"
+                className="inbox-ai-toggle"
+                onClick={() => setInboxAiOpen((open) => !open)}
+                aria-expanded={inboxAiOpen}
+              >
+                <span>
+                  <strong>AI Intake</strong>
+                  <small>Organize pasted lists into tasks, jobs, appointments, and notebook pages.</small>
+                </span>
+                <span>{inboxAiOpen ? 'Hide' : 'Open'}</span>
+              </button>
+              {inboxAiOpen && <AIIntakeView onUpdate={handleUpdate} embedded />}
+            </section>
+            <SidebarInboxRulesHint />
+          </>
+        )}
+
+        {currentView === 'tasks' && currentFilter === 'reschedule' && (
+          <AIReschedulerPanel items={visibleItems} onUpdate={handleUpdate} compact />
+        )}
 
         <TaskInput
           filter={currentFilter}
@@ -728,6 +816,7 @@ function App() {
             showProject
             viewId={currentViewId}
             onUpdate={handleUpdate}
+            showInlineNotes={showInlineNotes}
           />
         )}
       </>
@@ -763,6 +852,7 @@ function App() {
       <main className="main">
         <div className="main-scroll">{renderView()}</div>
       </main>
+      <NotificationCenter enabled={appState === 'ready'} />
       {schoolPagePopupId && (
         <div className="school-page-popout-overlay" onClick={() => setSchoolPagePopupId(null)}>
           <div

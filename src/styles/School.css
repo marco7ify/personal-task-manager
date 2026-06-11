@@ -1167,6 +1167,43 @@
 
 .exam-study-guide:focus { border-color: var(--accent); }
 
+.study-planner-section {
+  border-color: rgba(35, 131, 226, 0.35);
+}
+
+.study-planner-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.study-planner-grid > div {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-input);
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.study-planner-label {
+  display: block;
+  color: var(--text-sub);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.study-planner-grid strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ───────────────────────────── Buttons ───────────────────────────── */
 .school-btn {
   background: var(--bg-input);

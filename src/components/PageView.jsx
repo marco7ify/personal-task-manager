@@ -14,6 +14,7 @@ import { SlashMenu } from './SlashMenu';
 import { FormattingToolbar } from './FormattingToolbar';
 import { CreateFromHighlightModal } from './CreateFromHighlightModal';
 import { MasteryBar } from './MasteryBar';
+import { PAGE_TEMPLATES, createPageFromTemplate } from '../utils/templates';
 import { getCaretOffset, htmlToPlain, escapeHtml } from '../utils/richText';
 
 const PAGE_ICONS = ['📓', '📄', '📕', '📘', '📗', '📙', '📚', '📒', '📔', '🗂️', '🗒️', '📝', '🧠', '💡', '⭐', '🚀', '🎯', '🔥'];
@@ -32,6 +33,7 @@ export function PageView({
   const [slashOpenForBlockId, setSlashOpenForBlockId] = useState(null);
   const [slashQuery, setSlashQuery] = useState('');
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [showPageTemplates, setShowPageTemplates] = useState(false);
   const [createModal, setCreateModal] = useState(null);
   const [tasksCollapsed, setTasksCollapsed] = useState(true);
   const blockRefs = useRef(new Map());
@@ -166,6 +168,16 @@ export function PageView({
     Store.pages.push(newPage);
     page.expanded = true;
     Store.save();
+    onUpdate?.();
+    onNavigate?.('page', null, null, newPage.id);
+  };
+
+  const handleAddSubpageTemplate = (template) => {
+    const newPage = createPageFromTemplate(template, { parentId: page.id });
+    Store.pages.push(newPage);
+    page.expanded = true;
+    Store.save();
+    setShowPageTemplates(false);
     onUpdate?.();
     onNavigate?.('page', null, null, newPage.id);
   };
@@ -612,6 +624,30 @@ export function PageView({
         >
           + Subpage
         </button>
+        <div className="page-template-wrap">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowPageTemplates((value) => !value)}
+          >
+            Templates
+          </button>
+          {showPageTemplates && (
+            <div className="page-template-menu">
+              {PAGE_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  className="page-template-option"
+                  onClick={() => handleAddSubpageTemplate(template)}
+                >
+                  <strong>{template.title}</strong>
+                  <span>{template.description}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {Store.settings.masteryEnabled && (

@@ -12,7 +12,8 @@ export function ListView({
   showProject = false,
   viewId = null,
   onUpdate,
-  groupBySubfolder = false
+  groupBySubfolder = false,
+  showInlineNotes = false
 }) {
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -79,6 +80,7 @@ export function ListView({
                 onEdit={onEdit}
                 showProject={showProject || (viewConfig?.groupBy !== 'project')}
                 onUpdate={onUpdate}
+                showInlineNotes={showInlineNotes}
               />
             ))}
           </div>

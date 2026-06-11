@@ -1,0 +1,247 @@
+.help-view {
+  max-width: 1240px;
+}
+
+.help-subtitle {
+  margin-top: 6px;
+  color: var(--text-sub);
+  font-size: 0.92rem;
+}
+
+.help-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.help-hero-copy,
+.help-hero-panel,
+.help-card,
+.help-footer-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card, var(--bg-input));
+}
+
+.help-hero-copy {
+  padding: 20px;
+  background:
+    linear-gradient(135deg, rgba(35, 131, 226, 0.14), rgba(35, 131, 226, 0.04)),
+    var(--bg-card, var(--bg-input));
+}
+
+.help-hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(35, 131, 226, 0.12);
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.help-hero-copy h2 {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+}
+
+.help-hero-copy p,
+.help-hero-panel p,
+.help-footer-panel p {
+  margin: 0;
+  color: var(--text-sub);
+  line-height: 1.55;
+}
+
+.help-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.help-hero-panel {
+  padding: 16px;
+}
+
+.help-hero-panel-title,
+.help-section-head h2,
+.help-footer-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.help-hero-panel-title {
+  margin-bottom: 12px;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.help-quick-start {
+  display: grid;
+  gap: 10px;
+}
+
+.help-step {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-input);
+}
+
+.help-step strong {
+  color: var(--text-main);
+  font-size: 0.88rem;
+}
+
+.help-step span,
+.help-card p,
+.help-card li,
+.help-footer-panel p {
+  font-size: 0.84rem;
+}
+
+.help-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.help-toc-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card, var(--bg-input));
+  color: var(--text-sub);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.help-toc-item:hover {
+  border-color: var(--accent);
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+
+.help-section {
+  margin-bottom: 16px;
+}
+
+.help-section-head {
+  margin-bottom: 12px;
+}
+
+.help-section-head p {
+  margin: 6px 0 0;
+  color: var(--text-sub);
+  font-size: 0.85rem;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.help-card {
+  padding: 16px;
+}
+
+.help-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.help-card-head h2 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.help-card-head p {
+  margin: 6px 0 0;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+
+.help-card-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(35, 131, 226, 0.12);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.help-points {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-main);
+}
+
+.help-points li + li {
+  margin-top: 8px;
+}
+
+.help-tip {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(35, 131, 226, 0.24);
+  border-radius: 8px;
+  background: rgba(35, 131, 226, 0.08);
+  color: var(--text-main);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.help-tip strong {
+  color: var(--accent);
+}
+
+.help-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.help-footer-panel {
+  padding: 16px;
+}
+
+.help-footer-panel.subtle {
+  background:
+    linear-gradient(135deg, rgba(35, 131, 226, 0.08), rgba(35, 131, 226, 0.02)),
+    var(--bg-card, var(--bg-input));
+}
+
+@media (max-width: 980px) {
+  .help-hero,
+  .help-grid,
+  .help-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .help-card-head {
+    flex-direction: column;
+  }
+
+  .help-card-badge {
+    align-self: flex-start;
+  }
+}

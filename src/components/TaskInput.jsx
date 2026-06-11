@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Store } from '../utils/store';
 import { getToday } from '../utils/store';
+import { TASK_TEMPLATES, createTaskFromTemplate } from '../utils/templates';
 import '../styles/Input.css';
 import '../styles/Button.css';
 import '../styles/Recurrence.css';
@@ -16,6 +17,7 @@ export function TaskInput({ filter, projectId, onAdd }) {
   const [selectedDays, setSelectedDays] = useState([]);
   const [monthlyDay, setMonthlyDay] = useState(1);
   const [subfolder, setSubfolder] = useState('');
+  const [showTemplates, setShowTemplates] = useState(false);
 
   useEffect(() => {
     if (filter === 'today') {
@@ -84,6 +86,18 @@ export function TaskInput({ filter, projectId, onAdd }) {
     setMonthlyDay(1);
     setSubfolder('');
 
+    onAdd?.();
+  };
+
+  const handleTemplateAdd = (template) => {
+    const finalDate = filter === 'today' ? getToday() : date || getToday();
+    const item = createTaskFromTemplate(template, {
+      projectId: pid || projectId || null,
+      date: finalDate
+    });
+    Store.items.push(item);
+    Store.save();
+    setShowTemplates(false);
     onAdd?.();
   };
 
@@ -208,6 +222,30 @@ export function TaskInput({ filter, projectId, onAdd }) {
         <button className="btn btn-primary btn-sm" onClick={handleAdd}>
           Add
         </button>
+        <div className="input-template-wrap">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowTemplates((value) => !value)}
+          >
+            Templates
+          </button>
+          {showTemplates && (
+            <div className="input-template-menu">
+              {TASK_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  className="input-template-option"
+                  onClick={() => handleTemplateAdd(template)}
+                >
+                  <strong>{template.title}</strong>
+                  <span>{template.description}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

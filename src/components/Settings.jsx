@@ -7,6 +7,16 @@ import '../styles/Settings.css';
 import '../styles/Button.css';
 import '../styles/Modal.css';
 
+const PLANNER_DAYS = [
+  { id: 1, label: 'Mon' },
+  { id: 2, label: 'Tue' },
+  { id: 3, label: 'Wed' },
+  { id: 4, label: 'Thu' },
+  { id: 5, label: 'Fri' },
+  { id: 6, label: 'Sat' },
+  { id: 0, label: 'Sun' }
+];
+
 export function Settings({ onBack, onUpdate }) {
   const [showPropertySettings, setShowPropertySettings] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -22,6 +32,34 @@ export function Settings({ onBack, onUpdate }) {
     jobs: Store.settings.aiCategories?.jobs !== false,
     pages: Store.settings.aiCategories?.pages !== false
   });
+  const [notificationPermission, setNotificationPermission] = useState(
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
+  );
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    Store.settings.notificationsEnabled === true
+  );
+  const [notificationLeadMinutes, setNotificationLeadMinutes] = useState(
+    Store.settings.notificationLeadMinutes || 15
+  );
+  const [notificationCategories, setNotificationCategories] = useState({
+    tasks: Store.settings.notificationTasks !== false,
+    study: Store.settings.notificationStudy !== false,
+    jobs: Store.settings.notificationJobs !== false
+  });
+  const [plannerSleepStart, setPlannerSleepStart] = useState(Store.settings.plannerSleepStart || '23:00');
+  const [plannerSleepEnd, setPlannerSleepEnd] = useState(Store.settings.plannerSleepEnd || '07:00');
+  const [plannerWorkShifts, setPlannerWorkShifts] = useState(
+    Array.isArray(Store.settings.plannerWorkShifts)
+      ? Store.settings.plannerWorkShifts
+      : PLANNER_DAYS.map((day) => ({ day: day.id, enabled: false, start: '09:00', end: '17:00' }))
+  );
+  const [plannerInclude, setPlannerInclude] = useState({
+    tasks: Store.settings.plannerInclude?.tasks !== false,
+    classes: Store.settings.plannerInclude?.classes !== false,
+    study: Store.settings.plannerInclude?.study !== false,
+    jobs: Store.settings.plannerInclude?.jobs !== false,
+    events: Store.settings.plannerInclude?.events !== false
+  });
 
   const handleSave = () => {
     Store.settings.startHour = parseInt(document.getElementById('settingStartHour').value, 10);
@@ -30,6 +68,15 @@ export function Settings({ onBack, onUpdate }) {
     Store.settings.theme = document.getElementById('settingTheme').value;
     Store.settings.masteryEnabled = document.getElementById('settingMasteryEnabled').checked;
     Store.settings.masteryIgnoreUntracked = document.getElementById('settingMasteryIgnoreUntracked').checked;
+    Store.settings.notificationsEnabled = notificationsEnabled && notificationPermission === 'granted';
+    Store.settings.notificationLeadMinutes = Math.max(1, Number(notificationLeadMinutes) || 15);
+    Store.settings.notificationTasks = notificationCategories.tasks;
+    Store.settings.notificationStudy = notificationCategories.study;
+    Store.settings.notificationJobs = notificationCategories.jobs;
+    Store.settings.plannerSleepStart = plannerSleepStart;
+    Store.settings.plannerSleepEnd = plannerSleepEnd;
+    Store.settings.plannerWorkShifts = plannerWorkShifts;
+    Store.settings.plannerInclude = plannerInclude;
     Store.settings.aiDefaultModel = aiDefaultModel;
     Store.settings.aiCustomModel = aiCustomModel.trim();
     Store.settings.aiAllowNewDestinations = aiAllowNewDestinations;
@@ -39,6 +86,30 @@ export function Settings({ onBack, onUpdate }) {
     document.documentElement.setAttribute('data-theme', Store.settings.theme);
     onUpdate?.();
     alert('Settings Saved');
+  };
+
+  const handleRequestNotifications = async () => {
+    if (typeof Notification === 'undefined') {
+      setNotificationPermission('unsupported');
+      return;
+    }
+    const next = await Notification.requestPermission();
+    setNotificationPermission(next);
+    setNotificationsEnabled(next === 'granted');
+  };
+
+  const updatePlannerShift = (day, patch) => {
+    setPlannerWorkShifts((current) =>
+      PLANNER_DAYS.map((dayMeta) => {
+        const existing = current.find((shift) => Number(shift.day) === dayMeta.id) || {
+          day: dayMeta.id,
+          enabled: false,
+          start: '09:00',
+          end: '17:00'
+        };
+        return dayMeta.id === day ? { ...existing, ...patch } : existing;
+      })
+    );
   };
 
   return (
@@ -150,6 +221,84 @@ export function Settings({ onBack, onUpdate }) {
       </div>
 
       <div className="settings-section">
+        <h3 className="settings-title">AI Planning Availability</h3>
+        <p className="settings-hint">
+          Protected times are used by Home planning and future AI day/week plans.
+        </p>
+        <div className="settings-row settings-wrap-row">
+          <label className="settings-label">Sleep / unavailable:</label>
+          <input
+            type="time"
+            className="settings-input settings-time-input"
+            value={plannerSleepStart}
+            onChange={(e) => setPlannerSleepStart(e.target.value)}
+          />
+          <span className="settings-inline-note">to</span>
+          <input
+            type="time"
+            className="settings-input settings-time-input"
+            value={plannerSleepEnd}
+            onChange={(e) => setPlannerSleepEnd(e.target.value)}
+          />
+        </div>
+        <div className="planner-shift-list">
+          {PLANNER_DAYS.map((day) => {
+            const shift = plannerWorkShifts.find((item) => Number(item.day) === day.id) || {
+              day: day.id,
+              enabled: false,
+              start: '09:00',
+              end: '17:00'
+            };
+            return (
+              <label key={day.id} className={`planner-shift-row ${shift.enabled ? 'enabled' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={shift.enabled}
+                  onChange={(e) => updatePlannerShift(day.id, { enabled: e.target.checked })}
+                />
+                <span className="planner-shift-day">{day.label}</span>
+                <input
+                  type="time"
+                  className="settings-input settings-time-input"
+                  value={shift.start}
+                  disabled={!shift.enabled}
+                  onChange={(e) => updatePlannerShift(day.id, { start: e.target.value })}
+                />
+                <span className="settings-inline-note">to</span>
+                <input
+                  type="time"
+                  className="settings-input settings-time-input"
+                  value={shift.end}
+                  disabled={!shift.enabled}
+                  onChange={(e) => updatePlannerShift(day.id, { end: e.target.value })}
+                />
+              </label>
+            );
+          })}
+        </div>
+        <div className="settings-ai-categories planner-categories" aria-label="Planner categories">
+          {[
+            ['tasks', 'Tasks'],
+            ['events', 'Events'],
+            ['classes', 'Classes'],
+            ['study', 'Study'],
+            ['jobs', 'Jobs']
+          ].map(([key, label]) => (
+            <label key={key} className="settings-checkbox-label">
+              <input
+                type="checkbox"
+                checked={plannerInclude[key]}
+                onChange={(e) =>
+                  setPlannerInclude((current) => ({ ...current, [key]: e.target.checked }))
+                }
+              />
+              <span>Include {label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="settings-section">
         <h3 className="settings-title">⚠️ Auto Reschedule</h3>
         <p className="settings-hint" style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px' }}>
           Tasks with a due date <strong>before today</strong> (your local calendar) appear under Reschedule while still open.
@@ -215,6 +364,62 @@ export function Settings({ onBack, onUpdate }) {
           >
             Manage Properties
           </button>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-title">Notifications</h3>
+        <p className="settings-hint" style={{ color: 'var(--text-sub)', fontSize: '0.85rem', marginBottom: '8px' }}>
+          Browser notifications can remind you about timed tasks, study reviews, and job follow-ups while the app is open.
+        </p>
+        <div className="settings-row">
+          <label className="settings-checkbox-label">
+            <input
+              type="checkbox"
+              checked={notificationsEnabled}
+              disabled={notificationPermission !== 'granted'}
+              onChange={(e) => setNotificationsEnabled(e.target.checked)}
+            />
+            <span>Enable browser notifications</span>
+          </label>
+        </div>
+        <div className="settings-row">
+          <label className="settings-label">Permission:</label>
+          <span className="settings-pill">{notificationPermission}</span>
+          {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
+            <button type="button" className="btn btn-secondary btn-sm" onClick={handleRequestNotifications}>
+              Allow Notifications
+            </button>
+          )}
+        </div>
+        <div className="settings-row">
+          <label className="settings-label">Task lead time:</label>
+          <input
+            type="number"
+            className="settings-input"
+            min="1"
+            value={notificationLeadMinutes}
+            onChange={(e) => setNotificationLeadMinutes(e.target.value)}
+          />
+          <span className="settings-inline-note">minutes</span>
+        </div>
+        <div className="settings-ai-categories" aria-label="Notification categories">
+          {[
+            ['tasks', 'Timed tasks and events'],
+            ['study', 'Study reviews'],
+            ['jobs', 'Job follow-ups']
+          ].map(([key, label]) => (
+            <label key={key} className="settings-checkbox-label">
+              <input
+                type="checkbox"
+                checked={notificationCategories[key]}
+                onChange={(e) =>
+                  setNotificationCategories((current) => ({ ...current, [key]: e.target.checked }))
+                }
+              />
+              <span>{label}</span>
+            </label>
+          ))}
         </div>
       </div>
 
