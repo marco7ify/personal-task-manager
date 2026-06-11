@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Store } from '../utils/store';
+import { JOB_TEMPLATES } from '../utils/templates';
 import '../styles/Jobs.css';
 
 const JOB_STATUSES = [
@@ -19,6 +20,13 @@ const EMPTY_FORM = {
   payRate: '',
   schedule: '',
   location: '',
+  contactName: '',
+  contactEmail: '',
+  resumeVersion: '',
+  applicationDate: '',
+  interviewDate: '',
+  followUpDate: '',
+  nextAction: '',
   notes: ''
 };
 
@@ -34,6 +42,7 @@ export function JobsView({ onUpdate }) {
   const [editingId, setEditingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
 
   const statusCounts = { all: Store.jobs.length };
   for (const status of JOB_STATUSES) statusCounts[status.id] = statusCounts[status.id] || 0;
@@ -46,10 +55,34 @@ export function JobsView({ onUpdate }) {
     .filter((job) => statusFilter === 'all' || job.status === statusFilter)
     .filter((job) => {
       if (!q) return true;
-      return [job.company, job.role, job.location, job.schedule, job.payRate, job.notes]
+      return [
+        job.company,
+        job.role,
+        job.location,
+        job.schedule,
+        job.payRate,
+        job.contactName,
+        job.contactEmail,
+        job.resumeVersion,
+        job.nextAction,
+        job.notes
+      ]
         .some((field) => String(field || '').toLowerCase().includes(q));
     })
-    .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+    .sort((a, b) => {
+      const aFollow = a.followUpDate || '9999-12-31';
+      const bFollow = b.followUpDate || '9999-12-31';
+      if (aFollow !== bFollow) return aFollow.localeCompare(bFollow);
+      return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+    });
+
+  const upcomingFollowUps = Store.jobs
+    .filter((job) => job.followUpDate && job.followUpDate >= today && !['accepted', 'rejected'].includes(job.status))
+    .sort((a, b) => a.followUpDate.localeCompare(b.followUpDate))
+    .slice(0, 5);
+  const overdueFollowUps = Store.jobs
+    .filter((job) => job.followUpDate && job.followUpDate < today && !['accepted', 'rejected'].includes(job.status))
+    .length;
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -58,6 +91,14 @@ export function JobsView({ onUpdate }) {
   const resetForm = () => {
     setForm(EMPTY_FORM);
     setEditingId(null);
+  };
+
+  const applyTemplate = (template) => {
+    setEditingId(null);
+    setForm({
+      ...EMPTY_FORM,
+      ...template.job
+    });
   };
 
   const handleSubmit = (e) => {
@@ -75,6 +116,13 @@ export function JobsView({ onUpdate }) {
       payRate: form.payRate.trim(),
       schedule: form.schedule.trim(),
       location: form.location.trim(),
+      contactName: form.contactName.trim(),
+      contactEmail: form.contactEmail.trim(),
+      resumeVersion: form.resumeVersion.trim(),
+      applicationDate: form.applicationDate,
+      interviewDate: form.interviewDate,
+      followUpDate: form.followUpDate,
+      nextAction: form.nextAction.trim(),
       notes: form.notes.trim(),
       updatedAt: now
     };
@@ -105,6 +153,13 @@ export function JobsView({ onUpdate }) {
       payRate: job.payRate || '',
       schedule: job.schedule || '',
       location: job.location || '',
+      contactName: job.contactName || '',
+      contactEmail: job.contactEmail || '',
+      resumeVersion: job.resumeVersion || '',
+      applicationDate: job.applicationDate || '',
+      interviewDate: job.interviewDate || '',
+      followUpDate: job.followUpDate || '',
+      nextAction: job.nextAction || '',
       notes: job.notes || ''
     });
   };
@@ -119,6 +174,13 @@ export function JobsView({ onUpdate }) {
 
   const handleStatusChange = (job, status) => {
     job.status = status;
+    job.updatedAt = Date.now();
+    Store.save();
+    onUpdate?.();
+  };
+
+  const handleQuickField = (job, field, value) => {
+    job[field] = value;
     job.updatedAt = Date.now();
     Store.save();
     onUpdate?.();
@@ -148,6 +210,35 @@ export function JobsView({ onUpdate }) {
           >
             <span>{status.label}</span>
             <span className="jobs-status-count">{statusCounts[status.id] || 0}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="jobs-followup-strip">
+        <div className={`jobs-followup-alert ${overdueFollowUps > 0 ? 'hot' : ''}`}>
+          <strong>{overdueFollowUps}</strong>
+          <span>overdue follow-ups</span>
+        </div>
+        <div className="jobs-followup-list">
+          {upcomingFollowUps.length === 0 ? (
+            <span className="jobs-followup-empty">No upcoming follow-ups scheduled.</span>
+          ) : (
+            upcomingFollowUps.map((job) => (
+              <button key={job.id} type="button" onClick={() => handleEdit(job)}>
+                <span>{job.followUpDate}</span>
+                <strong>{job.company || job.role || 'Untitled job'}</strong>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="jobs-template-strip">
+        <span>Templates</span>
+        {JOB_TEMPLATES.map((template) => (
+          <button key={template.id} type="button" onClick={() => applyTemplate(template)}>
+            <strong>{template.title}</strong>
+            <small>{template.description}</small>
           </button>
         ))}
       </div>
@@ -185,6 +276,34 @@ export function JobsView({ onUpdate }) {
           <label>
             <span>Location</span>
             <input value={form.location} onChange={(e) => updateField('location', e.target.value)} />
+          </label>
+          <label>
+            <span>Contact name</span>
+            <input value={form.contactName} onChange={(e) => updateField('contactName', e.target.value)} />
+          </label>
+          <label>
+            <span>Contact email</span>
+            <input value={form.contactEmail} onChange={(e) => updateField('contactEmail', e.target.value)} />
+          </label>
+          <label>
+            <span>Resume/version</span>
+            <input value={form.resumeVersion} onChange={(e) => updateField('resumeVersion', e.target.value)} placeholder="General v3, retail resume, etc." />
+          </label>
+          <label>
+            <span>Applied on</span>
+            <input type="date" value={form.applicationDate} onChange={(e) => updateField('applicationDate', e.target.value)} />
+          </label>
+          <label>
+            <span>Interview date</span>
+            <input type="date" value={form.interviewDate} onChange={(e) => updateField('interviewDate', e.target.value)} />
+          </label>
+          <label>
+            <span>Follow up</span>
+            <input type="date" value={form.followUpDate} onChange={(e) => updateField('followUpDate', e.target.value)} />
+          </label>
+          <label className="jobs-next-action-field">
+            <span>Next action</span>
+            <input value={form.nextAction} onChange={(e) => updateField('nextAction', e.target.value)} placeholder="Send thank-you note, check portal, call recruiter..." />
           </label>
           <label className="jobs-notes-field">
             <span>Notes</span>
@@ -229,8 +348,20 @@ export function JobsView({ onUpdate }) {
                 {job.payRate && <span>Pay: {job.payRate}</span>}
                 {job.schedule && <span>Schedule: {job.schedule}</span>}
                 {job.location && <span>Location: {job.location}</span>}
+                {job.applicationDate && <span>Applied: {job.applicationDate}</span>}
+                {job.interviewDate && <span>Interview: {job.interviewDate}</span>}
+                {job.followUpDate && (
+                  <span className={job.followUpDate < today && !['accepted', 'rejected'].includes(job.status) ? 'job-meta-hot' : ''}>
+                    Follow up: {job.followUpDate}
+                  </span>
+                )}
+                {job.resumeVersion && <span>Resume: {job.resumeVersion}</span>}
+                {(job.contactName || job.contactEmail) && (
+                  <span>Contact: {[job.contactName, job.contactEmail].filter(Boolean).join(' - ')}</span>
+                )}
               </div>
 
+              {job.nextAction && <div className="job-next-action">Next: {job.nextAction}</div>}
               {job.notes && <p className="job-notes">{job.notes}</p>}
 
               <div className="job-actions">
@@ -241,6 +372,14 @@ export function JobsView({ onUpdate }) {
                 )}
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleEdit(job)}>
                   Edit
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => handleQuickField(job, 'followUpDate', '')}
+                  disabled={!job.followUpDate}
+                >
+                  Clear follow-up
                 </button>
                 <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDelete(job.id)}>
                   Delete

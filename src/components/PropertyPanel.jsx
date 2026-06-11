@@ -15,6 +15,7 @@ import { PropertySelect } from './properties/PropertySelect';
 import { PropertyMultiSelect } from './properties/PropertyMultiSelect';
 import { PropertyURL } from './properties/PropertyURL';
 import { PropertyAI } from './properties/PropertyAI';
+import { cleanupTaskWithAi } from '../utils/aiPlanner';
 import '../styles/Properties.css';
 
 const ACADEMIC_KEYS = {
@@ -42,6 +43,9 @@ export function PropertyPanel({ itemId, onClose, onSave }) {
   const [newClassName, setNewClassName] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
   const [activeTab, setActiveTab] = useState('properties');
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [cleanupSuggestion, setCleanupSuggestion] = useState(null);
+  const [cleanupError, setCleanupError] = useState('');
 
   useEffect(() => {
     if (!itemId) return;
@@ -63,6 +67,9 @@ export function PropertyPanel({ itemId, onClose, onSave }) {
     setNewSubtask('');
     setCustomProps(foundItem.customProps || {});
     setAcademicCatalog(Array.isArray(Store.settings.academicCatalog) ? Store.settings.academicCatalog : []);
+    setCleanupSuggestion(null);
+    setCleanupError('');
+    setCleanupLoading(false);
   }, [itemId]);
 
   const handleSave = () => {
@@ -92,6 +99,84 @@ export function PropertyPanel({ itemId, onClose, onSave }) {
       ...prev,
       [propertyId]: value
     }));
+  };
+
+  const buildCleanupContext = () => {
+    const currentProject = pid ? Store.projects.find((p) => p.id === pid) : null;
+    return {
+      id: String(itemId),
+      title: text,
+      notes: customProps?.prop_notes || item?.notes || '',
+      priority,
+      type,
+      projectId: pid || '',
+      projectName: currentProject?.name || '',
+      subfolder,
+      date,
+      time,
+      subtasks: subtasks.map((subtask) => subtask.text || '').filter(Boolean),
+      availableProjects: Store.projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        icon: project.icon || '',
+        subfolders: Array.from(
+          new Set(
+            Store.items
+              .filter((candidate) => candidate.pid === project.id && candidate.subfolder)
+              .map((candidate) => String(candidate.subfolder || '').trim())
+              .filter(Boolean)
+          )
+        ).slice(0, 30)
+      }))
+    };
+  };
+
+  const handleAiCleanup = async () => {
+    setCleanupError('');
+    setCleanupSuggestion(null);
+    if (!text.trim()) {
+      setCleanupError('Add a task title before using AI cleanup.');
+      return;
+    }
+
+    setCleanupLoading(true);
+    try {
+      const suggestion = await cleanupTaskWithAi({ taskContext: buildCleanupContext() });
+      setCleanupSuggestion(suggestion);
+    } catch (err) {
+      setCleanupError(err?.message || 'AI cleanup failed.');
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
+  const applyCleanupSuggestion = () => {
+    if (!cleanupSuggestion) return;
+
+    if (cleanupSuggestion.title) setText(cleanupSuggestion.title);
+    if (cleanupSuggestion.priority) setPriority(cleanupSuggestion.priority);
+    if (cleanupSuggestion.projectId) setPid(cleanupSuggestion.projectId);
+    if (cleanupSuggestion.subfolder && (cleanupSuggestion.projectId || pid)) {
+      setSubfolder(cleanupSuggestion.subfolder);
+    }
+    if (cleanupSuggestion.date) setDate(cleanupSuggestion.date);
+    if (cleanupSuggestion.time) setTime(cleanupSuggestion.time);
+
+    if (cleanupSuggestion.subtasks?.length > 0) {
+      setSubtasks((current) => {
+        const existing = new Set(
+          current.map((subtask) => String(subtask.text || '').trim().toLowerCase()).filter(Boolean)
+        );
+        const additions = cleanupSuggestion.subtasks
+          .map((value) => String(value || '').trim())
+          .filter((value) => value && !existing.has(value.toLowerCase()))
+          .map((value) => ({ text: value, done: false }));
+        return [...current, ...additions];
+      });
+    }
+
+    setCleanupSuggestion(null);
+    setCleanupError('');
   };
 
   const semesterValue = customProps[ACADEMIC_KEYS.SEMESTER] || '';
@@ -183,6 +268,52 @@ export function PropertyPanel({ itemId, onClose, onSave }) {
           .filter(Boolean)
       )
     ).sort((a, b) => a.localeCompare(b))
+    : [];
+
+  const getProjectLabel = (projectId) => {
+    if (!projectId) return 'No Project';
+    const project = Store.projects.find((p) => p.id === projectId);
+    return project ? `${project.icon || ''} ${project.name}`.trim() : 'No Project';
+  };
+
+  const cleanupPreviewRows = cleanupSuggestion
+    ? [
+        {
+          label: 'Title',
+          before: text,
+          after: cleanupSuggestion.title
+        },
+        {
+          label: 'Priority',
+          before: priority,
+          after: cleanupSuggestion.priority
+        },
+        {
+          label: 'Project',
+          before: getProjectLabel(pid),
+          after: cleanupSuggestion.projectId ? getProjectLabel(cleanupSuggestion.projectId) : ''
+        },
+        {
+          label: 'Subfolder',
+          before: subfolder || 'None',
+          after: cleanupSuggestion.subfolder
+        },
+        {
+          label: 'Date',
+          before: date || 'None',
+          after: cleanupSuggestion.date
+        },
+        {
+          label: 'Time',
+          before: time || 'None',
+          after: cleanupSuggestion.time
+        },
+        {
+          label: 'Subtasks',
+          before: subtasks.length > 0 ? subtasks.map((subtask) => subtask.text).join('\n') : 'None',
+          after: cleanupSuggestion.subtasks?.length > 0 ? cleanupSuggestion.subtasks.join('\n') : ''
+        }
+      ].filter((row) => row.after && String(row.after).trim() && String(row.after).trim() !== String(row.before).trim())
     : [];
 
   const addSubtask = () => {
@@ -333,7 +464,69 @@ export function PropertyPanel({ itemId, onClose, onSave }) {
                   e.target.style.height = e.target.scrollHeight + 'px';
                 }}
               />
+              <div className="property-ai-cleanup-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleAiCleanup}
+                  disabled={cleanupLoading}
+                >
+                  {cleanupLoading ? 'Cleaning up...' : 'AI Clean Up'}
+                </button>
+                {cleanupError && <span className="property-ai-cleanup-error">{cleanupError}</span>}
+              </div>
             </div>
+
+            {cleanupSuggestion && (
+              <div className="property-ai-cleanup-preview">
+                <div className="property-ai-cleanup-preview-header">
+                  <div>
+                    <strong>AI cleanup preview</strong>
+                    <span>{Math.round((cleanupSuggestion.confidence || 0) * 100)}% confidence</span>
+                  </div>
+                  <div className="property-ai-cleanup-preview-actions">
+                    <button type="button" className="btn btn-secondary" onClick={() => setCleanupSuggestion(null)}>
+                      Ignore
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={applyCleanupSuggestion}>
+                      Apply Changes
+                    </button>
+                  </div>
+                </div>
+
+                {cleanupSuggestion.reason && (
+                  <p className="property-ai-cleanup-reason">{cleanupSuggestion.reason}</p>
+                )}
+
+                {cleanupSuggestion.warnings?.length > 0 && (
+                  <div className="property-ai-cleanup-warnings">
+                    {cleanupSuggestion.warnings.map((warning) => (
+                      <span key={warning}>{warning}</span>
+                    ))}
+                  </div>
+                )}
+
+                {cleanupPreviewRows.length === 0 ? (
+                  <p className="property-panel-hint">AI did not find any confident field changes.</p>
+                ) : (
+                  <div className="property-ai-cleanup-rows">
+                    {cleanupPreviewRows.map((row) => (
+                      <div key={row.label} className="property-ai-cleanup-row">
+                        <span>{row.label}</span>
+                        <div>
+                          <strong>Original</strong>
+                          <pre>{row.before}</pre>
+                        </div>
+                        <div>
+                          <strong>AI suggestion</strong>
+                          <pre>{row.after}</pre>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Standard Properties */}
             <div className="property-panel-section">

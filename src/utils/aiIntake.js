@@ -1,5 +1,6 @@
 import { Store } from './store';
 import { BLOCK_TYPES, createBlock, createPage } from './pages';
+import { getAiInboxRules } from './aiInboxRules';
 
 export const OPENAI_API_KEY_STORAGE_KEY = 'ut_openai_api_key_v1';
 
@@ -20,6 +21,7 @@ const VALID_ACTIONS = new Set([
 ]);
 
 const VALID_KINDS = new Set(['task', 'event', 'job', 'page']);
+const VALID_ITEM_TYPES = new Set(['task', 'event', 'exam', 'assignment', 'quiz', 'homework', 'study_session']);
 
 export function getStoredOpenAiKey() {
   try {
@@ -88,7 +90,7 @@ export function buildAiContext() {
     status: job.status
   }));
 
-  return { projects, openTasks, pages, jobs };
+  return { projects, openTasks, pages, jobs, inboxRules: getAiInboxRules() };
 }
 
 export async function organizeWithAi({ inputText, model, categories, allowNewDestinations }) {
@@ -136,6 +138,10 @@ export function normalizeSuggestions(rawSuggestions = []) {
         id: raw.id || `suggestion_${index + 1}`,
         kind,
         action,
+        itemType: normalizeItemType(raw.itemType, kind),
+        matchedRuleIds: Array.isArray(raw.matchedRuleIds)
+          ? raw.matchedRuleIds.map((item) => String(item || '').trim()).filter(Boolean)
+          : [],
         title: String(raw.title || raw.role || raw.company || 'Untitled').trim(),
         notes: String(raw.notes || '').trim(),
         confidence: Number.isFinite(raw.confidence) ? raw.confidence : 0.75,
@@ -162,6 +168,12 @@ export function normalizeSuggestions(rawSuggestions = []) {
         payRate: raw.payRate || '',
         schedule: raw.schedule || '',
         location: raw.location || '',
+        contactName: raw.contactName || '',
+        contactEmail: raw.contactEmail || '',
+        applicationDate: normalizeDate(raw.applicationDate),
+        interviewDate: normalizeDate(raw.interviewDate),
+        followUpDate: normalizeDate(raw.followUpDate),
+        nextAction: raw.nextAction || '',
         notebookId: raw.notebookId || '',
         notebookTitle: raw.notebookTitle || '',
         pageTitle: raw.pageTitle || raw.title || 'Untitled Page',
@@ -207,7 +219,8 @@ export function applyAiSuggestion(suggestion, { allowNewDestinations = false, se
 
   if (suggestion.action === 'create_job' || suggestion.kind === 'job') {
     Store.jobs = Array.isArray(Store.jobs) ? Store.jobs : [];
-    Store.jobs.push({
+    const existingJob = findMatchingJob(suggestion);
+    const jobPatch = {
       id: `job_${nextId()}`,
       company: String(suggestion.company || '').trim(),
       role: String(suggestion.role || suggestion.title || '').trim(),
@@ -216,10 +229,40 @@ export function applyAiSuggestion(suggestion, { allowNewDestinations = false, se
       payRate: String(suggestion.payRate || '').trim(),
       schedule: String(suggestion.schedule || '').trim(),
       location: String(suggestion.location || '').trim(),
+      contactName: String(suggestion.contactName || '').trim(),
+      contactEmail: String(suggestion.contactEmail || '').trim(),
+      resumeVersion: '',
+      applicationDate: suggestion.applicationDate || '',
+      interviewDate: suggestion.interviewDate || '',
+      followUpDate: suggestion.followUpDate || '',
+      nextAction: String(suggestion.nextAction || '').trim(),
       notes: String(suggestion.notes || '').trim(),
       createdAt: nextId(),
       updatedAt: nextId()
-    });
+    };
+
+    if (existingJob) {
+      existingJob.status = jobPatch.status || existingJob.status;
+      existingJob.updatedAt = jobPatch.updatedAt;
+      for (const key of [
+        'link',
+        'payRate',
+        'schedule',
+        'location',
+        'contactName',
+        'contactEmail',
+        'applicationDate',
+        'interviewDate',
+        'followUpDate',
+        'nextAction',
+        'notes'
+      ]) {
+        if (jobPatch[key]) existingJob[key] = jobPatch[key];
+      }
+      return { ok: true, sequence, message: 'Job updated.' };
+    }
+
+    Store.jobs.push(jobPatch);
     return { ok: true, sequence, message: 'Job added.' };
   }
 
@@ -251,8 +294,8 @@ export function applyAiSuggestion(suggestion, { allowNewDestinations = false, se
   Store.items.push({
     id: nextId(),
     text: suggestion.title || 'Untitled task',
-    type: suggestion.kind === 'event' ? 'event' : 'task',
-    priority: 'low',
+    type: resolveItemType(suggestion),
+    priority: getDefaultPriorityForItemType(suggestion.itemType),
     pid: project?.id || null,
     subfolder: project?.id ? (String(suggestion.subfolder || '').trim() || null) : null,
     date: suggestion.date || null,
@@ -264,7 +307,8 @@ export function applyAiSuggestion(suggestion, { allowNewDestinations = false, se
     reschedule: false,
     createdAt: nextId(),
     customProps: suggestion.notes ? { prop_notes: suggestion.notes } : {},
-    subtasks: subtasks.map((text) => ({ text, done: false, createdAt: nextId() }))
+    subtasks: subtasks.map((text) => ({ text, done: false, createdAt: nextId() })),
+    ...(suggestion.itemType === 'exam' ? { examMeta: { studyGuide: '', linkedPageIds: [] } } : {})
   });
   return { ok: true, sequence, message: suggestion.kind === 'event' ? 'Event added.' : 'Task added.' };
 }
@@ -280,6 +324,16 @@ export function suggestionNeedsDestination(suggestion, allowNewDestinations) {
 function findTask(id) {
   if (!id) return null;
   return (Store.items || []).find((item) => String(item.id) === String(id)) || null;
+}
+
+function findMatchingJob(suggestion) {
+  const company = String(suggestion.company || '').trim().toLowerCase();
+  const role = String(suggestion.role || suggestion.title || '').trim().toLowerCase();
+  if (!company || !role) return null;
+  return (Store.jobs || []).find((job) =>
+    String(job.company || '').trim().toLowerCase() === company &&
+    String(job.role || '').trim().toLowerCase() === role
+  ) || null;
 }
 
 function resolveProject(suggestion, allowNewDestinations) {
@@ -361,6 +415,25 @@ function buildPageBlocks(blockTexts, blockFormat = 'bullet') {
   }
 
   return cleaned.map((text) => createBlock(BLOCK_TYPES.BULLET, escapeHtml(text)));
+}
+
+function normalizeItemType(value, kind) {
+  const text = String(value || '').trim();
+  if (VALID_ITEM_TYPES.has(text)) return text;
+  if (kind === 'event') return 'event';
+  return 'task';
+}
+
+function resolveItemType(suggestion) {
+  const itemType = normalizeItemType(suggestion.itemType, suggestion.kind);
+  if (itemType === 'event') return 'event';
+  return itemType;
+}
+
+function getDefaultPriorityForItemType(itemType) {
+  if (itemType === 'exam') return 'high';
+  if (['assignment', 'quiz', 'homework', 'study_session'].includes(itemType)) return 'medium';
+  return 'low';
 }
 
 function normalizeDate(value) {

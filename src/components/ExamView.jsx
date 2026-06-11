@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Store } from '../utils/store';
+import { Store, formatLocalYMD } from '../utils/store';
 import {
   getCourseById,
   getExamById,
@@ -11,8 +11,33 @@ import {
   SCHOOL_ITEM_ICONS
 } from '../utils/school';
 import { StudySection } from './StudySection';
-import { collectPagesForScope } from '../utils/mastery';
+import { collectPagesForScope, getMasteryBreakdown } from '../utils/mastery';
 import { createPage } from '../utils/pages';
+
+function addDays(dateStr, days) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return formatLocalYMD(d);
+}
+
+function daysBetween(startYMD, endYMD) {
+  const start = new Date(`${startYMD}T00:00:00`).getTime();
+  const end = new Date(`${endYMD}T00:00:00`).getTime();
+  return Math.max(0, Math.round((end - start) / 86400000));
+}
+
+function uniquePlanDates(todayYMD, examDate, targetCount) {
+  const daysUntil = daysBetween(todayYMD, examDate);
+  if (!examDate || daysUntil <= 0) return [];
+  const usableDays = Math.max(1, daysUntil - 1);
+  const count = Math.min(targetCount, usableDays);
+  const dates = new Set();
+  for (let i = 1; i <= count; i += 1) {
+    const offset = Math.max(0, Math.round((usableDays * i) / count) - 1);
+    dates.add(addDays(todayYMD, offset));
+  }
+  return Array.from(dates).sort();
+}
 
 export function ExamView({ examId, courseId, onNavigate, onUpdate, onOpenItemPanel }) {
   const exam = getExamById(examId);
@@ -96,6 +121,79 @@ export function ExamView({ examId, courseId, onNavigate, onUpdate, onOpenItemPan
     persist();
   };
 
+  const handleGenerateStudyPlan = () => {
+    if (!exam.date) {
+      alert('Set an exam date before generating a study plan.');
+      return;
+    }
+
+    const today = formatLocalYMD(new Date());
+    const daysUntil = daysBetween(today, exam.date);
+    if (daysUntil <= 0) {
+      alert('The exam date needs to be in the future.');
+      return;
+    }
+
+    const pages = collectPagesForScope({ rootPageIds: exam.examMeta.linkedPageIds || [] });
+    const mastery = getMasteryBreakdown(pages, today, {
+      ignoreUntracked: Store.settings.masteryIgnoreUntracked
+    });
+    const openExisting = getExamSubItems(exam.id).filter((item) => !item.done).length;
+    const weakPages = [
+      ...mastery.buckets.missed,
+      ...mastery.buckets.dueToday,
+      ...mastery.buckets.notStarted
+    ];
+    const desiredSessions =
+      mastery.totalPages === 0
+        ? 3
+        : mastery.score < 40
+          ? 5
+          : mastery.score < 70
+            ? 4
+            : 3;
+    const dates = uniquePlanDates(today, exam.date, Math.max(2, desiredSessions));
+    if (dates.length === 0) return;
+
+    Store.items = Store.items.filter(
+      (item) => !(item.parentExamId === exam.id && item.customProps?.studyPlanGenerated)
+    );
+
+    dates.forEach((date, index) => {
+      const weakPage = weakPages[index % Math.max(weakPages.length, 1)];
+      const focus = weakPage?.title
+        ? `Review ${weakPage.title}`
+        : index === dates.length - 1
+          ? 'Final mixed review'
+          : 'Study exam topics';
+      Store.items.push({
+        id: Date.now() + index + Math.floor(Math.random() * 1000),
+        text: `${focus} for ${exam.text || 'exam'}`,
+        type: SCHOOL_ITEM_TYPES.STUDY_SESSION,
+        priority: index >= dates.length - 2 || mastery.score < 50 ? 'high' : 'medium',
+        pid: exam.pid || courseId || null,
+        date,
+        time: null,
+        done: false,
+        archived: false,
+        recurrence: 'none',
+        recurDetails: null,
+        parentExamId: exam.id,
+        createdAt: Date.now(),
+        customProps: {
+          studyPlanGenerated: true,
+          prop_notes: [
+            `Generated for ${exam.text || 'this exam'}.`,
+            mastery.totalPages > 0 ? `Mastery score at generation: ${mastery.score}%.` : '',
+            openExisting > 0 ? `${openExisting} open exam task(s) existed when this was generated.` : ''
+          ].filter(Boolean).join(' ')
+        }
+      });
+    });
+
+    persist();
+  };
+
   const handleCreateAndLinkNotebook = () => {
     const name = newNotebookName.trim() || 'New Notebook';
     const page = createPage({ icon: '📓', title: name });
@@ -135,6 +233,7 @@ export function ExamView({ examId, courseId, onNavigate, onUpdate, onOpenItemPan
   }, [exam.examMeta.linkedPageIds, Store.pages]);
 
   const doneCount = subItems.filter((s) => s.done).length;
+  const generatedStudyCount = subItems.filter((s) => s.customProps?.studyPlanGenerated).length;
 
   return (
     <div className="exam-view">
@@ -266,6 +365,38 @@ export function ExamView({ examId, courseId, onNavigate, onUpdate, onOpenItemPan
         />
       </div>
 
+      <div className="school-section study-planner-section">
+        <div className="school-section-header">
+          <div className="school-section-title">
+            <span>Study</span>
+            <span>Study Planner</span>
+          </div>
+          <div className="school-section-actions">
+            <button
+              type="button"
+              className="school-btn primary"
+              onClick={handleGenerateStudyPlan}
+            >
+              Generate study plan
+            </button>
+          </div>
+        </div>
+        <div className="study-planner-grid">
+          <div>
+            <span className="study-planner-label">Exam date</span>
+            <strong>{exam.date || 'Set a date first'}</strong>
+          </div>
+          <div>
+            <span className="study-planner-label">Linked pages</span>
+            <strong>{studyPages.length}</strong>
+          </div>
+          <div>
+            <span className="study-planner-label">Generated sessions</span>
+            <strong>{generatedStudyCount}</strong>
+          </div>
+        </div>
+      </div>
+
       {/* Linked notebooks */}
       <div className="school-section">
         <div className="school-section-header">
@@ -384,6 +515,7 @@ export function ExamView({ examId, courseId, onNavigate, onUpdate, onOpenItemPan
               <option value={SCHOOL_ITEM_TYPES.HOMEWORK}>Homework</option>
               <option value={SCHOOL_ITEM_TYPES.ASSIGNMENT}>Assignment</option>
               <option value={SCHOOL_ITEM_TYPES.QUIZ}>Practice Quiz</option>
+              <option value={SCHOOL_ITEM_TYPES.STUDY_SESSION}>Study Session</option>
             </select>
             <button
               type="button"

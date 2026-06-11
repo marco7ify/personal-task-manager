@@ -8,6 +8,7 @@ import {
   organizeWithAi,
   suggestionNeedsDestination
 } from '../utils/aiIntake';
+import { getRuleLabel } from '../utils/aiInboxRules';
 import '../styles/AIIntake.css';
 
 const ACTION_LABELS = {
@@ -18,10 +19,20 @@ const ACTION_LABELS = {
   create_page: 'Create notebook page'
 };
 
+const ITEM_TYPE_LABELS = {
+  task: 'Task',
+  event: 'Event',
+  exam: 'Exam',
+  assignment: 'Assignment',
+  quiz: 'Quiz',
+  homework: 'Homework',
+  study_session: 'Study session'
+};
+
 function categoryAllowsSuggestion(suggestion, categories) {
   if (suggestion.action === 'create_job' || suggestion.kind === 'job') return categories.jobs;
   if (suggestion.action === 'create_page' || suggestion.kind === 'page') return categories.pages;
-  if (suggestion.kind === 'event') return categories.events;
+  if (suggestion.kind === 'event' || suggestion.itemType === 'event') return categories.events;
   return categories.tasks;
 }
 
@@ -98,8 +109,10 @@ function buildTaskFallbackFromInput(inputText) {
     subfolder: '',
     date: '',
     time: '',
-    recurrence: 'none',
-    subtasks,
+        recurrence: 'none',
+        itemType: 'task',
+        matchedRuleIds: ['task'],
+        subtasks,
     existingTaskId: '',
     company: '',
     role: '',
@@ -107,8 +120,14 @@ function buildTaskFallbackFromInput(inputText) {
     status: 'interested',
     payRate: '',
     schedule: '',
-    location: '',
-    notebookId: '',
+        location: '',
+        contactName: '',
+        contactEmail: '',
+        applicationDate: '',
+        interviewDate: '',
+        followUpDate: '',
+        nextAction: '',
+        notebookId: '',
     notebookTitle: '',
     pageTitle: '',
     blockFormat: 'bullet',
@@ -116,7 +135,7 @@ function buildTaskFallbackFromInput(inputText) {
   };
 }
 
-export function AIIntakeView({ onUpdate }) {
+export function AIIntakeView({ onUpdate, embedded = false }) {
   const [inputText, setInputText] = useState('');
   const [selectedModel, setSelectedModel] = useState(Store.settings.aiDefaultModel || 'gpt-5.5');
   const [customModel, setCustomModel] = useState(Store.settings.aiCustomModel || '');
@@ -254,9 +273,16 @@ export function AIIntakeView({ onUpdate }) {
   const applyAll = () => applyList(suggestions);
 
   return (
-    <div className="ai-intake-view">
+    <div className={`ai-intake-view ${embedded ? 'embedded' : ''}`}>
       <div className="header-row">
-        <h1 className="page-title">AI Intake</h1>
+        {embedded ? (
+          <div>
+            <h2 className="ai-intake-title">AI Intake</h2>
+            <p className="ai-intake-subtitle">Paste loose notes, then review before anything is added.</p>
+          </div>
+        ) : (
+          <h1 className="page-title">AI Intake</h1>
+        )}
         <div className="header-controls">
           <button type="button" className="btn btn-primary btn-sm" onClick={handleOrganize} disabled={loading}>
             {loading ? 'Organizing...' : 'Organize with AI'}
@@ -402,6 +428,14 @@ function SuggestionCard({
         <span className="ai-confidence">{Math.round((suggestion.confidence || 0) * 100)}%</span>
       </div>
 
+      {suggestion.matchedRuleIds?.length > 0 && (
+        <div className="ai-rule-row">
+          {suggestion.matchedRuleIds.map((ruleId) => (
+            <span key={ruleId}>{getRuleLabel(ruleId)}</span>
+          ))}
+        </div>
+      )}
+
       <div className="ai-card-grid">
         <label>
           <span>Action</span>
@@ -413,10 +447,20 @@ function SuggestionCard({
         </label>
         {(suggestion.action === 'create_item' || suggestion.action === 'create_parent_with_subtasks') && (
           <label>
-            <span>Type</span>
-            <select value={suggestion.kind} onChange={(e) => onChange({ kind: e.target.value })}>
-              <option value="task">Task</option>
-              <option value="event">Event</option>
+            <span>Item type</span>
+            <select
+              value={suggestion.itemType || (suggestion.kind === 'event' ? 'event' : 'task')}
+              onChange={(e) => {
+                const itemType = e.target.value;
+                onChange({
+                  itemType,
+                  kind: itemType === 'event' ? 'event' : 'task'
+                });
+              }}
+            >
+              {Object.entries(ITEM_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </label>
         )}
@@ -454,6 +498,18 @@ function SuggestionCard({
           <label>
             <span>Location</span>
             <input value={suggestion.location} onChange={(e) => onChange({ location: e.target.value })} />
+          </label>
+          <label>
+            <span>Interview date</span>
+            <input type="date" value={suggestion.interviewDate} onChange={(e) => onChange({ interviewDate: e.target.value })} />
+          </label>
+          <label>
+            <span>Follow up</span>
+            <input type="date" value={suggestion.followUpDate} onChange={(e) => onChange({ followUpDate: e.target.value })} />
+          </label>
+          <label>
+            <span>Next action</span>
+            <input value={suggestion.nextAction} onChange={(e) => onChange({ nextAction: e.target.value })} />
           </label>
         </div>
       )}

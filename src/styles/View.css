@@ -59,6 +59,17 @@
   color: var(--text-sub);
 }
 
+.view-toggle.standalone {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+}
+
+.view-toggle.standalone.active {
+  background: rgba(35, 131, 226, 0.18);
+  border-color: rgba(35, 131, 226, 0.42);
+  color: var(--accent);
+}
+
 .filter-bar {
   display: flex;
   gap: 4px;
@@ -89,6 +100,56 @@
   background: var(--bg-hover);
   color: var(--text-main);
   font-weight: 600;
+}
+
+.inbox-ai-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.inbox-ai-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  padding: 13px 15px;
+  text-align: left;
+}
+
+.inbox-ai-toggle:hover {
+  background: var(--bg-hover);
+}
+
+.inbox-ai-toggle > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.inbox-ai-toggle strong {
+  font-size: 0.95rem;
+}
+
+.inbox-ai-toggle small {
+  color: var(--text-sub);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.inbox-ai-toggle > span:last-child {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .tasks-container {

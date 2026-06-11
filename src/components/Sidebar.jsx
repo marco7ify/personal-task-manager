@@ -37,7 +37,7 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
       next[p.id] = Store.items.filter(
         (i) => i.pid === p.id && !i.date && !i.done && !i.archived
       ).length;
-      // prev[p.id] undefined on first mount → set equal so no false highlight
+      // prev[p.id] undefined on first mount -> set equal so no false highlight
       const prevCount = prev[p.id] ?? next[p.id];
       if (next[p.id] > prevCount) toHighlight.push(p.id);
     });
@@ -98,6 +98,30 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
       <div className="sidebar-brand">⚡ Ultimate Tasks</div>
 
       <div className="sidebar-header">
+        <span>Start</span>
+      </div>
+      <button
+        className={`sidebar-item ${currentView === 'home' ? 'active' : ''}`}
+        onClick={() => onNavigate('home')}
+      >
+        <span>Home</span>
+        <span>Dashboard</span>
+      </button>
+      <button
+        className={`sidebar-item ${currentView === 'dailyReview' ? 'active' : ''}`}
+        onClick={() => onNavigate('dailyReview')}
+      >
+        <span>Review</span>
+        <span>Daily Review</span>
+      </button>
+      <button
+        className={`sidebar-item ${currentView === 'help' ? 'active' : ''}`}
+        onClick={() => onNavigate('help')}
+      >
+        <span>?</span>
+        <span>Help</span>
+      </button>
+      <div className="sidebar-header">
         <span>Global Views</span>
         <button
           className="sidebar-views-settings"
@@ -116,6 +140,8 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
         <span>All Items</span>
         <span className="sidebar-count">{projectCounts.all}</span>
       </button>
+      {false && (
+        <>
       <button
         className={`sidebar-item ${currentView === 'tasks' && currentFilter === 'inbox' ? 'active' : ''}`}
         onClick={() => onNavigate('tasks', 'inbox')}
@@ -180,6 +206,8 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
         <span>Archived</span>
         <span className="sidebar-count">{projectCounts.archived}</span>
       </button>
+        </>
+      )}
 
       <div className="sidebar-header">
         <span>Projects</span>
@@ -215,10 +243,18 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
           const isHighlighted = highlightedInboxProjects.has(p.id);
 
           return (
-            <button
+            <div
               key={p.id}
               className={`sidebar-item ${isActive ? 'active' : ''}`}
+              role="button"
+              tabIndex={0}
               onClick={() => onNavigate('project', null, p.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onNavigate('project', null, p.id);
+                }
+              }}
             >
               <span>{p.icon}</span>
               <span className="sidebar-project-name">{p.name}</span>
@@ -231,7 +267,7 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
                     if (isHighlighted) dismissHighlight(e, p.id);
                     onNavigate('project', 'inbox', p.id);
                   }}
-                  title={isHighlighted ? 'New from inbox — click to open' : `${inboxCount} unscheduled — click to open`}
+                  title={isHighlighted ? 'New from inbox - click to open' : `${inboxCount} unscheduled - click to open`}
                   aria-label={`Unscheduled: ${inboxCount}`}
                   role="button"
                   tabIndex={0}
@@ -271,7 +307,7 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
                   background: `conic-gradient(${p.color || 'var(--accent)'} ${progress}%, var(--border) 0)`
                 }}
               />
-            </button>
+            </div>
           );
         })}
       </div>
@@ -293,6 +329,14 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
         onUpdate={onUpdate}
       />
 
+      <button
+        className={`sidebar-item ${currentView === 'studyQueue' ? 'active' : ''}`}
+        onClick={() => onNavigate('studyQueue')}
+      >
+        <span>Study</span>
+        <span>Study Queue</span>
+      </button>
+
       {!inGlobalViews && (
         <NotebooksTree
           currentPageId={currentPageId}
@@ -304,17 +348,6 @@ export function Sidebar({ currentView, currentFilter, currentProjectId, currentC
           emptyLabel="No school notebooks yet."
         />
       )}
-
-      <div className="sidebar-header">
-        <span>AI</span>
-      </div>
-      <button
-        className={`sidebar-item ${currentView === 'aiIntake' ? 'active' : ''}`}
-        onClick={() => onNavigate('aiIntake')}
-      >
-        <span>AI</span>
-        <span>Intake</span>
-      </button>
 
       <div className="sidebar-header">
         <span>Jobs</span>

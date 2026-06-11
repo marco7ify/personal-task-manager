@@ -103,6 +103,8 @@ export const Store = {
     theme: 'dark',
     /** Project ids hidden from global views (All, Today, Week, etc.); inbox/nofolder ignore this */
     viewExcludedProjectIds: [],
+    /** Show task/event notes directly under rows in list views */
+    showInlineNotes: false,
     /** Default badge visibility for newly created projects */
     defaultShowInboxBadge: true,
     defaultShowTodayBadge: true,
@@ -111,6 +113,31 @@ export const Store = {
     /** Mastery tracking settings */
     masteryEnabled: true,
     masteryIgnoreUntracked: true,
+    /** Browser notification settings */
+    notificationsEnabled: false,
+    notificationLeadMinutes: 15,
+    notificationTasks: true,
+    notificationStudy: true,
+    notificationJobs: true,
+    /** AI planning preferences */
+    plannerSleepStart: '23:00',
+    plannerSleepEnd: '07:00',
+    plannerWorkShifts: [
+      { day: 1, enabled: false, start: '09:00', end: '17:00' },
+      { day: 2, enabled: false, start: '09:00', end: '17:00' },
+      { day: 3, enabled: false, start: '09:00', end: '17:00' },
+      { day: 4, enabled: false, start: '09:00', end: '17:00' },
+      { day: 5, enabled: false, start: '09:00', end: '17:00' },
+      { day: 6, enabled: false, start: '09:00', end: '17:00' },
+      { day: 0, enabled: false, start: '09:00', end: '17:00' }
+    ],
+    plannerInclude: {
+      tasks: true,
+      classes: true,
+      study: true,
+      jobs: true,
+      events: true
+    },
     /** AI Intake preferences. API keys are intentionally kept out of synced Store data. */
     aiDefaultModel: 'gpt-5.5',
     aiCustomModel: '',
@@ -129,6 +156,7 @@ export const Store = {
     this.items.forEach(i  => { if (!i.customProps) i.customProps = {}; });
     if (!Array.isArray(this.semesters)) this.semesters = [];
     if (!Array.isArray(this.jobs)) this.jobs = [];
+    if (typeof this.settings.showInlineNotes !== 'boolean') this.settings.showInlineNotes = false;
     this.jobs = this.jobs
       .filter((job) => job && job.id)
       .map((job) => ({
@@ -142,6 +170,13 @@ export const Store = {
         payRate: String(job.payRate || '').trim(),
         schedule: String(job.schedule || '').trim(),
         location: String(job.location || '').trim(),
+        contactName: String(job.contactName || '').trim(),
+        contactEmail: String(job.contactEmail || '').trim(),
+        resumeVersion: String(job.resumeVersion || '').trim(),
+        applicationDate: String(job.applicationDate || '').trim(),
+        interviewDate: String(job.interviewDate || '').trim(),
+        followUpDate: String(job.followUpDate || '').trim(),
+        nextAction: String(job.nextAction || '').trim(),
         notes: String(job.notes || '').trim(),
         createdAt: job.createdAt || Date.now(),
         updatedAt: job.updatedAt || job.createdAt || Date.now()
@@ -200,6 +235,32 @@ export const Store = {
     if (!Array.isArray(this.settings.academicCatalog)) this.settings.academicCatalog = [];
     if (typeof this.settings.masteryEnabled !== 'boolean') this.settings.masteryEnabled = true;
     if (typeof this.settings.masteryIgnoreUntracked !== 'boolean') this.settings.masteryIgnoreUntracked = true;
+    if (typeof this.settings.notificationsEnabled !== 'boolean') this.settings.notificationsEnabled = false;
+    if (typeof this.settings.notificationLeadMinutes !== 'number') this.settings.notificationLeadMinutes = 15;
+    if (typeof this.settings.notificationTasks !== 'boolean') this.settings.notificationTasks = true;
+    if (typeof this.settings.notificationStudy !== 'boolean') this.settings.notificationStudy = true;
+    if (typeof this.settings.notificationJobs !== 'boolean') this.settings.notificationJobs = true;
+    if (typeof this.settings.plannerSleepStart !== 'string') this.settings.plannerSleepStart = '23:00';
+    if (typeof this.settings.plannerSleepEnd !== 'string') this.settings.plannerSleepEnd = '07:00';
+    const defaultShifts = this.settings.plannerWorkShifts || [];
+    this.settings.plannerWorkShifts = [1, 2, 3, 4, 5, 6, 0].map((day) => {
+      const existing = Array.isArray(defaultShifts)
+        ? defaultShifts.find((shift) => Number(shift?.day) === day)
+        : null;
+      return {
+        day,
+        enabled: existing?.enabled === true,
+        start: typeof existing?.start === 'string' ? existing.start : '09:00',
+        end: typeof existing?.end === 'string' ? existing.end : '17:00'
+      };
+    });
+    this.settings.plannerInclude = {
+      tasks: this.settings.plannerInclude?.tasks !== false,
+      classes: this.settings.plannerInclude?.classes !== false,
+      study: this.settings.plannerInclude?.study !== false,
+      jobs: this.settings.plannerInclude?.jobs !== false,
+      events: this.settings.plannerInclude?.events !== false
+    };
     if (typeof this.settings.aiDefaultModel !== 'string') this.settings.aiDefaultModel = 'gpt-5.5';
     if (typeof this.settings.aiCustomModel !== 'string') this.settings.aiCustomModel = '';
     if (typeof this.settings.aiAllowNewDestinations !== 'boolean') this.settings.aiAllowNewDestinations = false;

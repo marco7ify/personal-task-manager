@@ -76,12 +76,12 @@
   margin-top: 6px;
 }
 
-/* ── modal-body: padded scrollable area ────────────────────── */
+/* modal-body: padded scrollable area */
 .modal-body {
   padding: 4px 0 12px;
 }
 
-/* ── Badge defaults (modal + project panel) ────────────────── */
+/* Badge defaults (modal + project panel) */
 .project-badge-defaults-modal {
   width: min(440px, 100%);
 }

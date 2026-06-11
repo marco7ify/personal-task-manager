@@ -115,6 +115,117 @@
   border-bottom-color: var(--accent);
 }
 
+.property-ai-cleanup-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.property-ai-cleanup-error {
+  color: var(--danger);
+  font-size: 0.78rem;
+}
+
+.property-ai-cleanup-preview {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card, var(--bg-input));
+  padding: 12px;
+  margin: -8px 0 20px;
+}
+
+.property-ai-cleanup-preview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.property-ai-cleanup-preview-header strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 0.92rem;
+}
+
+.property-ai-cleanup-preview-header span,
+.property-ai-cleanup-reason {
+  color: var(--text-sub);
+  font-size: 0.78rem;
+}
+
+.property-ai-cleanup-preview-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.property-ai-cleanup-reason {
+  margin: 9px 0 0;
+  line-height: 1.4;
+}
+
+.property-ai-cleanup-warnings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.property-ai-cleanup-warnings span {
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  font-size: 0.72rem;
+  padding: 3px 7px;
+}
+
+.property-ai-cleanup-rows {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.property-ai-cleanup-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border-top: 1px solid var(--border);
+  padding-top: 9px;
+}
+
+.property-ai-cleanup-row > span {
+  color: var(--text-sub);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.property-ai-cleanup-row strong {
+  display: block;
+  color: var(--text-sub);
+  font-size: 0.68rem;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.property-ai-cleanup-row pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  padding: 7px;
+}
+
 /* Property Sections */
 .property-panel-section {
   margin-bottom: 24px;
