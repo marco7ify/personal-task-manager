@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as db from './db.js';
@@ -8,53 +8,65 @@ import * as db from './db.js';
 const __dirname  = dirname(fileURLToPath(import.meta.url));
 const app        = express();
 const PORT       = process.env.PORT || 3005;
-const PASSWORD   = process.env.APP_PASSWORD  || 'changeme';
-const JWT_SECRET = process.env.JWT_SECRET    || 'dev-secret-change-in-production';
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment.'
+  );
+}
+
+const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
+
+function getOpenAiApiKey(req) {
+  return String(
+    req.headers['x-openai-api-key'] ||
+    req.body?.apiKey ||
+    process.env.OPENAI_API_KEY ||
+    ''
+  ).trim();
+}
 
 app.use(express.json({ limit: '20mb' }));
 
 // ── Auth middleware ──────────────────────────────────────────────────────────
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const auth = req.headers.authorization || '';
   if (!auth.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  try {
-    jwt.verify(auth.slice(7), JWT_SECRET);
-    next();
-  } catch {
+  const token = auth.slice(7);
+  const { data, error } = await authClient.auth.getUser(token);
+  if (error || !data.user) {
     res.status(401).json({ error: 'Invalid token' });
+    return;
   }
+  req.user = data.user;
+  next();
 }
-
-// ── Auth routes ──────────────────────────────────────────────────────────────
-app.post('/api/auth/login', (req, res) => {
-  const { password } = req.body || {};
-  if (password !== PASSWORD) {
-    return res.status(401).json({ error: 'Wrong password' });
-  }
-  const token = jwt.sign({ ok: true }, JWT_SECRET, { expiresIn: '30d' });
-  res.json({ token });
-});
 
 app.get('/api/auth/verify', requireAuth, (_req, res) => {
   res.json({ ok: true });
 });
 
 // ── Data routes ──────────────────────────────────────────────────────────────
-app.get('/api/data', requireAuth, (_req, res) => {
+app.get('/api/data', requireAuth, async (req, res) => {
   try {
-    res.json(db.getAll());
+    const data = await db.getAll(req.user.id);
+    res.json(data);
   } catch (err) {
     console.error('DB read error:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-app.post('/api/data', requireAuth, (req, res) => {
+app.post('/api/data', requireAuth, async (req, res) => {
   try {
-    db.setAll(req.body);
+    await db.setAll(req.user.id, req.body);
     res.json({ ok: true });
   } catch (err) {
     console.error('DB write error:', err);
@@ -272,6 +284,25 @@ const TASK_CLEANUP_SCHEMA = {
   }
 };
 
+const RESUME_VERSION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['title', 'summary', 'tailoredResume', 'keywordMatches', 'warnings'],
+  properties: {
+    title: { type: 'string' },
+    summary: { type: 'string' },
+    tailoredResume: { type: 'string' },
+    keywordMatches: {
+      type: 'array',
+      items: { type: 'string' }
+    },
+    warnings: {
+      type: 'array',
+      items: { type: 'string' }
+    }
+  }
+};
+
 function extractResponseText(data) {
   if (typeof data?.output_text === 'string') return data.output_text;
   const parts = [];
@@ -404,8 +435,37 @@ function buildTaskCleanupPrompt({ taskContext }) {
   ].join('\n');
 }
 
-app.post('/api/ai/organize', async (req, res) => {
-  const apiKey = req.headers['x-openai-api-key'] || req.body?.apiKey;
+function buildResumeVersionPrompt({ baseResume, jobDescription, jobContext }) {
+  return [
+    'You tailor a resume for a specific job application.',
+    'Return only structured JSON matching the schema.',
+    '',
+    'Goal:',
+    'Rewrite the supplied resume into a stronger plain-text resume version for the pasted job description.',
+    '',
+    'Rules:',
+    '- Preserve the user\'s facts. Do not invent employers, credentials, dates, tools, degrees, projects, metrics, or experience.',
+    '- You may rephrase, reorder, sharpen bullets, and emphasize existing experience that fits the job description.',
+    '- Keep it ATS-friendly plain text with clear section headings.',
+    '- Keep bullets concise and accomplishment-oriented when the source supports it.',
+    '- If a requirement is not supported by the base resume, do not add it as experience. Mention gaps in warnings.',
+    '- Do not include markdown fences.',
+    '- Title should be a short saved-version name, not a resume heading.',
+    '- Summary should explain what changed in one or two sentences.',
+    '- keywordMatches should list important job-description terms that are truthfully represented in the tailored resume.',
+    '',
+    `Saved job context: ${JSON.stringify(jobContext || {})}`,
+    '',
+    'Base resume:',
+    baseResume,
+    '',
+    'Job description:',
+    jobDescription
+  ].join('\n');
+}
+
+app.post('/api/ai/organize', requireAuth, async (req, res) => {
+  const apiKey = getOpenAiApiKey(req);
   const inputText = String(req.body?.inputText || '').trim();
   const model = String(req.body?.model || 'gpt-5.5').trim();
   const options = req.body?.options || {};
@@ -466,8 +526,73 @@ app.post('/api/ai/organize', async (req, res) => {
   }
 });
 
-app.post('/api/ai/plan', async (req, res) => {
-  const apiKey = req.headers['x-openai-api-key'] || req.body?.apiKey;
+app.post('/api/ai/resume-version', requireAuth, async (req, res) => {
+  const apiKey = getOpenAiApiKey(req);
+  const model = String(req.body?.model || 'gpt-5.5').trim();
+  const baseResume = String(req.body?.baseResume || '').trim();
+  const jobDescription = String(req.body?.jobDescription || '').trim();
+  const jobContext = req.body?.jobContext || {};
+
+  if (!apiKey || typeof apiKey !== 'string') {
+    return res.status(400).json({ error: 'OpenAI API key is required.' });
+  }
+  if (!baseResume) {
+    return res.status(400).json({ error: 'Upload or paste a base resume first.' });
+  }
+  if (!jobDescription) {
+    return res.status(400).json({ error: 'Paste a job description first.' });
+  }
+
+  try {
+    const openaiRes = await fetch(OPENAI_RESPONSES_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model,
+        input: [
+          {
+            role: 'system',
+            content:
+              'You are a careful resume editor. You tailor resumes without inventing facts.'
+          },
+          {
+            role: 'user',
+            content: buildResumeVersionPrompt({ baseResume, jobDescription, jobContext })
+          }
+        ],
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'ai_resume_version',
+            strict: true,
+            schema: RESUME_VERSION_SCHEMA
+          },
+          verbosity: 'medium'
+        }
+      })
+    });
+
+    const data = await openaiRes.json().catch(() => ({}));
+    if (!openaiRes.ok) {
+      return res.status(openaiRes.status).json({
+        error: data?.error?.message || 'OpenAI request failed.'
+      });
+    }
+
+    const text = extractResponseText(data);
+    const parsed = JSON.parse(text);
+    res.json(parsed);
+  } catch (err) {
+    console.error('AI resume version error:', err);
+    res.status(500).json({ error: err?.message || 'AI resume version failed.' });
+  }
+});
+
+app.post('/api/ai/plan', requireAuth, async (req, res) => {
+  const apiKey = getOpenAiApiKey(req);
   const model = String(req.body?.model || 'gpt-5.5').trim();
   const context = req.body?.context || {};
   const range = req.body?.range === 'week' ? 'week' : 'day';
@@ -527,8 +652,8 @@ app.post('/api/ai/plan', async (req, res) => {
   }
 });
 
-app.post('/api/ai/reschedule', async (req, res) => {
-  const apiKey = req.headers['x-openai-api-key'] || req.body?.apiKey;
+app.post('/api/ai/reschedule', requireAuth, async (req, res) => {
+  const apiKey = getOpenAiApiKey(req);
   const model = String(req.body?.model || 'gpt-5.5').trim();
   const context = req.body?.context || {};
 
@@ -590,8 +715,8 @@ app.post('/api/ai/reschedule', async (req, res) => {
   }
 });
 
-app.post('/api/ai/task-cleanup', async (req, res) => {
-  const apiKey = req.headers['x-openai-api-key'] || req.body?.apiKey;
+app.post('/api/ai/task-cleanup', requireAuth, async (req, res) => {
+  const apiKey = getOpenAiApiKey(req);
   const model = String(req.body?.model || 'gpt-5.5').trim();
   const taskContext = req.body?.taskContext || {};
 

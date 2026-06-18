@@ -3,7 +3,16 @@ import { Store, getToday } from '../utils/store';
 import { getInlineProperties, getPropertyValue, setPropertyValue, getOption, PROPERTY_TYPES, ENTITY_TYPES } from '../utils/properties';
 import '../styles/Task.css';
 
-export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false, onUpdate, showInlineNotes = false }) {
+export function TaskRow({
+  item,
+  onToggle,
+  onDelete,
+  onEdit,
+  showProject = false,
+  onUpdate,
+  showInlineNotes = false,
+  showInboxReasons = false
+}) {
   const project = item.pid ? Store.projects.find(p => p.id === item.pid) : null;
   const bgColor = project
     ? `rgba(${hexToRgba(project.color)}, ${getPriorityAlpha(item.priority || 'low')})`
@@ -145,12 +154,12 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
   };
 
   const priority = item.priority || 'low';
-  const priorityClass = `badge${priority.charAt(0).toUpperCase() + priority.slice(1)}`;
   const subtasks = Array.isArray(item.subtasks) ? item.subtasks : [];
   const doneSubtasks = subtasks.filter((st) => st.done).length;
+  const inboxReasons = showInboxReasons ? getInboxReasonBadges(item, subtasks) : [];
   const [showInlineAdd, setShowInlineAdd] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
-  const [subtasksExpanded, setSubtasksExpanded] = useState(false);
+  const [subtasksExpanded, setSubtasksExpanded] = useState(true);
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
 
   useEffect(() => {
@@ -259,7 +268,16 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
               Note
             </button>
           )}
-          {showProject && (
+          {inboxReasons.map((reason) => (
+            <span
+              key={reason.label}
+              className={`task-badge task-inbox-reason tone-${reason.tone}`}
+              title={reason.title}
+            >
+              {reason.label}
+            </span>
+          ))}
+          {showProject && (project || !showInboxReasons) && (
             <span className="task-badge" title={project ? project.name : 'No folder'}>
               {project ? `${project.icon} ${project.name}` : '📥 No folder'}
             </span>
@@ -280,7 +298,7 @@ export function TaskRow({ item, onToggle, onDelete, onEdit, showProject = false,
                 onClick={() => setSubtasksExpanded((v) => !v)}
                 title={subtasksExpanded ? 'Hide subtasks' : 'Show subtasks'}
               >
-                {subtasksExpanded ? '▾ Subtasks' : '▸ Subtasks'}
+                {subtasksExpanded ? '▾ Subtasks' : `▸ ${subtasks.length} subtasks`}
               </button>
             </>
           )}
@@ -457,4 +475,111 @@ function getPriorityAlpha(priority) {
   if (priority === 'high') return 0.35;
   if (priority === 'medium') return 0.1;
   return 0.02;
+}
+
+function getInboxReasonBadges(item, subtasks) {
+  const badges = [];
+  const metadata = item.customProps?.prop_ai_intake || {};
+  const confidence = Number(metadata.confidence);
+  const matchedRules = Array.isArray(metadata.matchedRuleIds) ? metadata.matchedRuleIds : [];
+  const text = [
+    item.text,
+    item.notes,
+    item.customProps?.prop_notes,
+    item.subfolder,
+    ...subtasks.map((subtask) => subtask.text)
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (!item.pid) {
+    badges.push({
+      label: 'No project',
+      tone: 'warning',
+      title: 'Assign a project to route this item out of the global inbox.'
+    });
+  }
+
+  if (!item.date) {
+    badges.push({
+      label: 'No date',
+      tone: 'warning',
+      title: 'Schedule this item or leave it intentionally in the backlog.'
+    });
+  }
+
+  const aiRule = matchedRules.find((rule) =>
+    ['job_application', 'interview', 'appointment', 'exam', 'notebook_idea', 'task'].includes(rule)
+  );
+  if (aiRule) {
+    badges.push({
+      label: `AI: ${formatAiRuleLabel(aiRule)}`,
+      tone: 'ai',
+      title: 'AI Intake matched this routing rule when the item was created.'
+    });
+  } else if (looksLikeJobLead(text)) {
+    badges.push({
+      label: 'AI: Job',
+      tone: 'ai',
+      title: 'This item looks like a job, application, interview, or recruiter follow-up.'
+    });
+  }
+
+  if (Number.isFinite(confidence) && confidence > 0 && confidence < 0.65) {
+    badges.push({
+      label: 'Low confidence',
+      tone: 'danger',
+      title: 'AI Intake had low confidence in its classification. Review the destination.'
+    });
+  } else if (!item.pid && !item.date && !aiRule) {
+    badges.push({
+      label: 'Needs review',
+      tone: 'neutral',
+      title: 'Choose a project, date, or destination to clear this item from the inbox.'
+    });
+  }
+
+  if ((looksLikeJobLead(text) || aiRule === 'job_application' || aiRule === 'interview') && !item.date) {
+    badges.push({
+      label: 'Missing follow-up',
+      tone: 'danger',
+      title: 'Job-related inbox items should usually have a follow-up date.'
+    });
+  }
+
+  if (subtasks.length > 0) {
+    badges.push({
+      label: `Has ${subtasks.length} subtasks`,
+      tone: 'neutral',
+      title: 'This inbox item already has child work attached.'
+    });
+  }
+
+  return dedupeBadges(badges);
+}
+
+function looksLikeJobLead(text) {
+  return /\b(job|apply|application|resume|recruiter|interview|hiring|position|role|company|hospital|rn|nurse|linkedin)\b/.test(text);
+}
+
+function formatAiRuleLabel(rule) {
+  const labels = {
+    job_application: 'Job',
+    interview: 'Interview',
+    appointment: 'Event',
+    exam: 'Exam',
+    notebook_idea: 'Note',
+    task: 'Task'
+  };
+  return labels[rule] || rule;
+}
+
+function dedupeBadges(badges) {
+  const seen = new Set();
+  return badges.filter((badge) => {
+    if (seen.has(badge.label)) return false;
+    seen.add(badge.label);
+    return true;
+  });
 }

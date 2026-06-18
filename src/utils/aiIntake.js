@@ -1,6 +1,7 @@
 import { Store } from './store';
 import { BLOCK_TYPES, createBlock, createPage } from './pages';
 import { getAiInboxRules } from './aiInboxRules';
+import { authHeaders } from './api';
 
 export const OPENAI_API_KEY_STORAGE_KEY = 'ut_openai_api_key_v1';
 
@@ -39,6 +40,11 @@ export function setStoredOpenAiKey(value) {
   } catch {
     // Ignore storage failures; callers surface validation messages.
   }
+}
+
+export function getOpenAiOverrideHeaders() {
+  const apiKey = getStoredOpenAiKey();
+  return apiKey ? { 'x-openai-api-key': apiKey } : {};
 }
 
 export function getConfiguredModel() {
@@ -94,14 +100,12 @@ export function buildAiContext() {
 }
 
 export async function organizeWithAi({ inputText, model, categories, allowNewDestinations }) {
-  const apiKey = getStoredOpenAiKey();
-  if (!apiKey) throw new Error('Add your OpenAI API key in Settings first.');
-
   const res = await fetch('/api/ai/organize', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-openai-api-key': apiKey
+      ...getOpenAiOverrideHeaders(),
+      ...authHeaders()
     },
     body: JSON.stringify({
       inputText,
@@ -306,7 +310,15 @@ export function applyAiSuggestion(suggestion, { allowNewDestinations = false, se
     archived: false,
     reschedule: false,
     createdAt: nextId(),
-    customProps: suggestion.notes ? { prop_notes: suggestion.notes } : {},
+    customProps: {
+      ...(suggestion.notes ? { prop_notes: suggestion.notes } : {}),
+      prop_ai_intake: {
+        confidence: suggestion.confidence,
+        matchedRuleIds: suggestion.matchedRuleIds || [],
+        suggestedKind: suggestion.kind,
+        createdAt: Date.now()
+      }
+    },
     subtasks: subtasks.map((text) => ({ text, done: false, createdAt: nextId() })),
     ...(suggestion.itemType === 'exam' ? { examMeta: { studyGuide: '', linkedPageIds: [] } } : {})
   });

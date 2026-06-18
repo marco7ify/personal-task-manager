@@ -8,7 +8,9 @@ const STORAGE_KEYS = {
   viewConfigs: 'ut_viewConfigs_v1',
   pages: 'ut_pages_v1',
   semesters: 'ut_semesters_v1',
-  jobs: 'ut_jobs_v1'
+  jobs: 'ut_jobs_v1',
+  resumes: 'ut_resumes_v1',
+  serverSynced: 'ut_server_synced_v1'
 };
 
 // Property types supported by the system
@@ -94,6 +96,7 @@ export const Store = {
   pages: [],        // Notion-style pages (notebooks + nested pages)
   semesters: [],    // School semesters that group course projects
   jobs: [],         // Job applications and opportunities
+  resumes: [],      // Uploaded and tailored resume versions
   propertyDefs: [], // Custom property definitions
   viewConfigs: {},  // Saved view configurations
   settings: {
@@ -156,7 +159,31 @@ export const Store = {
     this.items.forEach(i  => { if (!i.customProps) i.customProps = {}; });
     if (!Array.isArray(this.semesters)) this.semesters = [];
     if (!Array.isArray(this.jobs)) this.jobs = [];
+    if (!Array.isArray(this.resumes)) this.resumes = [];
     if (typeof this.settings.showInlineNotes !== 'boolean') this.settings.showInlineNotes = false;
+    this.resumes = this.resumes
+      .filter((resume) => resume && resume.id)
+      .map((resume) => ({
+        id: resume.id,
+        name: String(resume.name || 'Untitled resume').trim() || 'Untitled resume',
+        type: resume.type === 'tailored' ? 'tailored' : 'base',
+        sourceResumeId: resume.sourceResumeId || '',
+        jobId: resume.jobId || '',
+        company: String(resume.company || '').trim(),
+        role: String(resume.role || '').trim(),
+        fileName: String(resume.fileName || '').trim(),
+        content: String(resume.content || ''),
+        jobDescription: String(resume.jobDescription || ''),
+        summary: String(resume.summary || '').trim(),
+        keywordMatches: Array.isArray(resume.keywordMatches)
+          ? resume.keywordMatches.map((item) => String(item || '').trim()).filter(Boolean)
+          : [],
+        warnings: Array.isArray(resume.warnings)
+          ? resume.warnings.map((item) => String(item || '').trim()).filter(Boolean)
+          : [],
+        createdAt: resume.createdAt || Date.now(),
+        updatedAt: resume.updatedAt || resume.createdAt || Date.now()
+      }));
     this.jobs = this.jobs
       .filter((job) => job && job.id)
       .map((job) => ({
@@ -173,6 +200,7 @@ export const Store = {
         contactName: String(job.contactName || '').trim(),
         contactEmail: String(job.contactEmail || '').trim(),
         resumeVersion: String(job.resumeVersion || '').trim(),
+        resumeVersionId: job.resumeVersionId || '',
         applicationDate: String(job.applicationDate || '').trim(),
         interviewDate: String(job.interviewDate || '').trim(),
         followUpDate: String(job.followUpDate || '').trim(),
@@ -343,6 +371,7 @@ export const Store = {
       const pages        = localStorage.getItem(STORAGE_KEYS.pages);
       const semesters    = localStorage.getItem(STORAGE_KEYS.semesters);
       const jobs         = localStorage.getItem(STORAGE_KEYS.jobs);
+      const resumes      = localStorage.getItem(STORAGE_KEYS.resumes);
 
       if (items) this.items = JSON.parse(items);
       else this.seed();
@@ -354,10 +383,21 @@ export const Store = {
       if (pages)        this.pages        = JSON.parse(pages);
       if (semesters)    this.semesters    = JSON.parse(semesters);
       if (jobs)         this.jobs         = JSON.parse(jobs);
+      if (resumes)      this.resumes      = JSON.parse(resumes);
       this._postLoad();
     } catch (e) {
       console.error('Load error:', e);
       this.seed();
+    }
+  },
+
+  hasLocalSnapshot() {
+    try {
+      return Object.entries(STORAGE_KEYS)
+        .filter(([name]) => name !== 'serverSynced')
+        .some(([, key]) => localStorage.getItem(key) != null);
+    } catch {
+      return false;
     }
   },
 
@@ -367,6 +407,17 @@ export const Store = {
       if (!isAuthenticated()) { this.loadLocal(); return; }
 
       const data = await fetchData();
+      const hasServerData = Object.values(data || {}).some((value) => {
+        if (Array.isArray(value)) return value.length > 0;
+        if (value && typeof value === 'object') return Object.keys(value).length > 0;
+        return value != null;
+      });
+
+      if (!hasServerData && this.hasLocalSnapshot()) {
+        this.loadLocal();
+        this._syncToServer();
+        return;
+      }
 
       if (data.items)        this.items        = data.items        ?? [];
       if (data.projects)     this.projects     = data.projects     ?? [];
@@ -376,9 +427,10 @@ export const Store = {
       if (data.pages)        this.pages        = data.pages        ?? [];
       if (data.semesters)    this.semesters    = data.semesters    ?? [];
       if (data.jobs)         this.jobs         = data.jobs         ?? [];
+      if (data.resumes)      this.resumes      = data.resumes      ?? [];
 
-      // If DB is empty (fresh deploy), seed and push initial data
-      if (!data.items || data.items.length === 0) {
+      // If DB is empty (fresh deploy), seed and push initial data.
+      if (!hasServerData) {
         this.seed();
         this._postLoad();
         this._syncToServer();
@@ -404,6 +456,7 @@ export const Store = {
       localStorage.setItem(STORAGE_KEYS.pages,        JSON.stringify(this.pages || []));
       localStorage.setItem(STORAGE_KEYS.semesters,    JSON.stringify(this.semesters || []));
       localStorage.setItem(STORAGE_KEYS.jobs,         JSON.stringify(this.jobs || []));
+      localStorage.setItem(STORAGE_KEYS.resumes,      JSON.stringify(this.resumes || []));
     } catch (e) {
       console.error('localStorage error:', e);
     }
@@ -421,7 +474,16 @@ export const Store = {
       pages: this.pages || [],
       semesters: this.semesters || [],
       jobs: this.jobs || [],
-    }).catch(err => console.warn('Server save failed:', err.message));
+      resumes: this.resumes || [],
+    })
+      .then(() => {
+        try {
+          localStorage.setItem(STORAGE_KEYS.serverSynced, String(Date.now()));
+        } catch {
+          // Sync succeeded; marker persistence is best effort.
+        }
+      })
+      .catch(err => console.warn('Server save failed:', err.message));
   },
 
   /** Save: instant localStorage + background server sync */
@@ -457,6 +519,7 @@ export const Store = {
       }
     ];
     this.jobs = [];
+    this.resumes = [];
 
     this.projects = [
       {
@@ -863,6 +926,7 @@ export const Store = {
           pages: this.pages || [],
           semesters: this.semesters || [],
           jobs: this.jobs || [],
+          resumes: this.resumes || [],
         });
       }
     } catch (e) {

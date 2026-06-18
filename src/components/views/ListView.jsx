@@ -13,7 +13,8 @@ export function ListView({
   viewId = null,
   onUpdate,
   groupBySubfolder = false,
-  showInlineNotes = false
+  showInlineNotes = false,
+  showInboxReasons = false
 }) {
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -81,6 +82,7 @@ export function ListView({
                 showProject={showProject || (viewConfig?.groupBy !== 'project')}
                 onUpdate={onUpdate}
                 showInlineNotes={showInlineNotes}
+                showInboxReasons={showInboxReasons}
               />
             ))}
           </div>

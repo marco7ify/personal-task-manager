@@ -1,6 +1,7 @@
 import { Store, formatLocalYMD, getToday } from './store';
 import { getCourses, nextClassDate } from './school';
-import { getConfiguredModel, getStoredOpenAiKey } from './aiIntake';
+import { getConfiguredModel, getOpenAiOverrideHeaders } from './aiIntake';
+import { authHeaders } from './api';
 
 export {
   RESCHEDULE_ACTION_LABELS,
@@ -146,14 +147,12 @@ export function buildPlannerContext({ startDate = getToday(), days = 1, include 
 }
 
 export async function planScheduleWithAi({ range = 'day', context, model = getConfiguredModel() }) {
-  const apiKey = getStoredOpenAiKey();
-  if (!apiKey) throw new Error('Add your OpenAI API key in Settings first.');
-
   const res = await fetch('/api/ai/plan', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-openai-api-key': apiKey
+      ...getOpenAiOverrideHeaders(),
+      ...authHeaders()
     },
     body: JSON.stringify({
       model,
@@ -214,14 +213,12 @@ export function applyPlanBlocks(blocks) {
 }
 
 export async function cleanupTaskWithAi({ taskContext, model = getConfiguredModel() }) {
-  const apiKey = getStoredOpenAiKey();
-  if (!apiKey) throw new Error('Add your OpenAI API key in Settings first.');
-
   const res = await fetch('/api/ai/task-cleanup', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-openai-api-key': apiKey
+      ...getOpenAiOverrideHeaders(),
+      ...authHeaders()
     },
     body: JSON.stringify({
       model,

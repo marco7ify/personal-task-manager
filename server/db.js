@@ -1,44 +1,64 @@
-import Database from 'better-sqlite3';
-import { existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const STORE_TABLE = process.env.SUPABASE_STORE_TABLE || 'app_store';
 
-// Use DATA_DIR env var for Railway volume, otherwise local data/ folder
-const DATA_DIR = process.env.DATA_DIR || join(__dirname, '../data');
-if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment.'
+  );
+}
 
-const db = new Database(join(DATA_DIR, 'tasks.db'));
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS store (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at INTEGER DEFAULT (unixepoch())
-  )
-`);
+const KEYS = [
+  'items',
+  'projects',
+  'settings',
+  'propertyDefs',
+  'viewConfigs',
+  'pages',
+  'semesters',
+  'jobs',
+  'resumes'
+];
 
-const stmtGet    = db.prepare('SELECT value FROM store WHERE key = ?');
-const stmtUpsert = db.prepare(
-  'INSERT OR REPLACE INTO store (key, value, updated_at) VALUES (?, ?, unixepoch())'
-);
+export async function getAll(userId) {
+  const { data, error } = await supabase
+    .from(STORE_TABLE)
+    .select('key, value')
+    .eq('user_id', userId)
+    .in('key', KEYS);
 
-const KEYS = ['items', 'projects', 'settings', 'propertyDefs', 'viewConfigs', 'pages', 'semesters', 'jobs'];
+  if (error) throw error;
 
-export function getAll() {
+  const rowsByKey = new Map((data || []).map((row) => [row.key, row.value]));
   const result = {};
+
   for (const key of KEYS) {
-    const row = stmtGet.get(key);
-    result[key] = row ? JSON.parse(row.value) : null;
+    result[key] = rowsByKey.has(key) ? rowsByKey.get(key) : null;
   }
+
   return result;
 }
 
-export const setAll = db.transaction((data) => {
-  for (const key of KEYS) {
-    if (data[key] !== undefined) {
-      stmtUpsert.run(key, JSON.stringify(data[key]));
-    }
-  }
-});
+export async function setAll(userId, payload) {
+  const rows = KEYS
+    .filter((key) => payload[key] !== undefined)
+    .map((key) => ({
+      user_id: userId,
+      key,
+      value: payload[key]
+    }));
+
+  if (rows.length === 0) return;
+
+  const { error } = await supabase
+    .from(STORE_TABLE)
+    .upsert(rows, { onConflict: 'user_id,key' });
+
+  if (error) throw error;
+}

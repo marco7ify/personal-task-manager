@@ -57,6 +57,173 @@
   font-size: 0.72rem;
 }
 
+.jobs-resume-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.jobs-resume-editor,
+.jobs-resume-ai,
+.jobs-resume-list {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.jobs-resume-editor,
+.jobs-resume-ai {
+  padding: 14px;
+}
+
+.jobs-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.jobs-section-header h2 {
+  margin: 0 0 2px;
+  font-size: 0.98rem;
+}
+
+.jobs-section-header p {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 0.78rem;
+}
+
+.jobs-resume-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.jobs-resume-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-sub);
+  font-size: 0.78rem;
+}
+
+.jobs-resume-grid input,
+.jobs-resume-grid select,
+.jobs-resume-grid textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-main);
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.jobs-resume-grid input[type="file"] {
+  padding: 7px 9px;
+}
+
+.jobs-resume-grid input:focus,
+.jobs-resume-grid select:focus,
+.jobs-resume-grid textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.jobs-resume-text-field {
+  grid-column: 1 / -1;
+}
+
+.jobs-resume-grid textarea {
+  min-height: 166px;
+  resize: vertical;
+}
+
+.jobs-resume-alert {
+  margin-top: 10px;
+  border: 1px solid rgba(90, 180, 120, 0.35);
+  border-radius: 7px;
+  background: rgba(90, 180, 120, 0.1);
+  color: var(--text-main);
+  padding: 9px 10px;
+  font-size: 0.84rem;
+}
+
+.jobs-resume-alert.error {
+  border-color: rgba(255, 85, 85, 0.42);
+  background: rgba(255, 85, 85, 0.1);
+  color: var(--danger);
+}
+
+.jobs-resume-list {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.jobs-resume-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+}
+
+.jobs-resume-card + .jobs-resume-card {
+  border-top: 1px solid var(--border);
+}
+
+.jobs-resume-card strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.jobs-resume-card > div > span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-sub);
+  font-size: 0.76rem;
+}
+
+.jobs-resume-card p {
+  margin: 8px 0 0;
+  color: var(--text-main);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.jobs-resume-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.jobs-resume-keywords span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-sub);
+  padding: 3px 7px;
+  font-size: 0.72rem;
+}
+
+.jobs-resume-card-actions {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
 .jobs-followup-alert {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -327,6 +494,10 @@
 }
 
 @media (max-width: 900px) {
+  .jobs-resume-section {
+    grid-template-columns: 1fr;
+  }
+
   .jobs-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -337,6 +508,23 @@
 }
 
 @media (max-width: 640px) {
+  .jobs-section-header,
+  .jobs-resume-card {
+    grid-template-columns: 1fr;
+  }
+
+  .jobs-section-header {
+    display: grid;
+  }
+
+  .jobs-resume-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jobs-resume-card-actions {
+    justify-content: flex-start;
+  }
+
   .jobs-form-grid {
     grid-template-columns: 1fr;
   }

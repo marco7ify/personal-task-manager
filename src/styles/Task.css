@@ -139,6 +139,35 @@
   white-space: nowrap;
 }
 
+.task-inbox-reason {
+  border-color: var(--border);
+  font-weight: 650;
+}
+
+.task-inbox-reason.tone-warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+}
+
+.task-inbox-reason.tone-danger {
+  background: rgba(255, 85, 85, 0.1);
+  border-color: rgba(255, 85, 85, 0.28);
+  color: var(--danger);
+}
+
+.task-inbox-reason.tone-ai {
+  background: rgba(35, 131, 226, 0.12);
+  border-color: rgba(35, 131, 226, 0.3);
+  color: var(--accent);
+}
+
+.task-inbox-reason.tone-neutral {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-main);
+}
+
 .badge-overdue {
   background: rgba(255, 85, 85, 0.15);
   color: var(--danger);

@@ -1,28 +1,84 @@
+import { hasSupabaseConfig, supabase } from './supabaseClient';
+
 const TOKEN_KEY = 'ut_auth_token';
 
-export function getToken()          { return localStorage.getItem(TOKEN_KEY); }
-export function storeToken(token)   { localStorage.setItem(TOKEN_KEY, token); }
-export function clearToken()        { localStorage.removeItem(TOKEN_KEY); }
-export function isAuthenticated()   { return !!getToken(); }
+export function getToken() { return localStorage.getItem(TOKEN_KEY); }
+export function storeToken(token) { localStorage.setItem(TOKEN_KEY, token); }
+export function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+export function isAuthenticated() { return !!getToken(); }
 
-function authHeaders() {
+export async function refreshAuthToken() {
+  if (!hasSupabaseConfig) return null;
+
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session?.access_token) {
+    clearToken();
+    return null;
+  }
+
+  storeToken(data.session.access_token);
+  return data.session.access_token;
+}
+
+export function subscribeToAuthChanges(onChange) {
+  if (!hasSupabaseConfig) return { unsubscribe: () => {} };
+
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.access_token) storeToken(session.access_token);
+    else clearToken();
+    onChange?.(session);
+  });
+
+  return data.subscription;
+}
+
+export function authHeaders() {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function login(password) {
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
+export async function login(email, password) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Missing Supabase frontend configuration.');
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
   });
-  if (!res.ok) throw new Error('Wrong password');
-  const { token } = await res.json();
-  storeToken(token);
+
+  if (error) throw error;
+  if (!data.session?.access_token) throw new Error('No session returned.');
+
+  storeToken(data.session.access_token);
+}
+
+export async function signUp(email, password) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Missing Supabase frontend configuration.');
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+  if (!data.session?.access_token) {
+    throw new Error('Check your email to confirm your account before signing in.');
+  }
+
+  storeToken(data.session.access_token);
+}
+
+export async function logout() {
+  if (hasSupabaseConfig) await supabase.auth.signOut();
+  clearToken();
 }
 
 export async function verifyToken() {
   try {
+    if (!getToken()) await refreshAuthToken();
     const res = await fetch('/api/auth/verify', { headers: authHeaders() });
     return res.ok;
   } catch {

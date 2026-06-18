@@ -124,7 +124,9 @@ export function Settings({ onBack, onUpdate }) {
       <div className="settings-section">
         <h3 className="settings-title">AI Intake</h3>
         <div className="settings-row settings-row-stacked">
-          <label className="settings-label" htmlFor="settingOpenAiKey">OpenAI API key</label>
+          <label className="settings-label" htmlFor="settingOpenAiKey">
+            Optional browser OpenAI key override
+          </label>
           <input
             type="password"
             className="settings-input settings-input-wide"
@@ -134,6 +136,9 @@ export function Settings({ onBack, onUpdate }) {
             placeholder="sk-..."
             autoComplete="off"
           />
+          <div className="settings-help">
+            AI uses the shared Railway server key by default. Enter a key here only to override it in this browser.
+          </div>
         </div>
         <div className="settings-row settings-row-stacked">
           <label className="settings-label" htmlFor="settingAiModel">Default AI model</label>

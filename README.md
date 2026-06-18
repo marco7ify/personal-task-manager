@@ -29,6 +29,17 @@ npm run dev
 
 The app will be available at `http://localhost:4004`
 
+### Supabase Backend Setup
+
+1. Create a Supabase project.
+2. In Supabase SQL Editor, run `supabase/schema.sql` from this repo.
+3. Copy `.env.example` to `.env` and fill:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `APP_PASSWORD`
+   - `JWT_SECRET`
+4. Start the app with `npm run dev`.
+
 ### Build
 
 ```bash
@@ -73,7 +84,8 @@ src/
 
 ## Data Storage
 
-All data is stored locally in your browser using localStorage. No data is sent to any server.
+- Primary storage: Supabase table `public.app_store` through the Node/Express backend.
+- Local cache: Browser `localStorage` is still used for offline/fallback UX.
 
 ## License
 

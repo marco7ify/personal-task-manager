@@ -1,5 +1,6 @@
 import { Store, getToday } from './store';
-import { getConfiguredModel, getStoredOpenAiKey } from './aiIntake';
+import { getConfiguredModel, getOpenAiOverrideHeaders } from './aiIntake';
+import { authHeaders } from './api';
 
 const ACTIONS = ['move_tomorrow', 'move_later_week', 'split_subtasks', 'archive', 'keep_inbox'];
 
@@ -57,15 +58,13 @@ export function buildRescheduleContext(items, { today = getToday() } = {}) {
 }
 
 export async function suggestRescheduleWithAi({ items, model = getConfiguredModel() }) {
-  const apiKey = getStoredOpenAiKey();
-  if (!apiKey) throw new Error('Add your OpenAI API key in Settings first.');
-
   const context = buildRescheduleContext(items);
   const res = await fetch('/api/ai/reschedule', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-openai-api-key': apiKey
+      ...getOpenAiOverrideHeaders(),
+      ...authHeaders()
     },
     body: JSON.stringify({ model, context })
   });

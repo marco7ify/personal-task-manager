@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Store } from './utils/store';
+import { logout, refreshAuthToken, subscribeToAuthChanges, verifyToken } from './utils/api';
 import { getFilteredItems, getCounts } from './utils/filters';
 import { getNextDate, getToday, getAllowedModes } from './utils/store';
 import { Sidebar } from './components/Sidebar';
@@ -21,6 +22,7 @@ import { DailyReviewView } from './components/DailyReviewView';
 import { StudyQueueView } from './components/StudyQueueView';
 import { HelpView } from './components/HelpView';
 import { NotificationCenter } from './components/NotificationCenter';
+import { Login } from './components/Login';
 import { getSemesters, isCourseProject, UNASSIGNED_SEMESTER_ID } from './utils/school';
 import { ListView } from './components/views/ListView';
 import { ScheduleView } from './components/views/ScheduleView';
@@ -73,10 +75,22 @@ function App() {
   };
 
   useEffect(() => {
+    const subscription = subscribeToAuthChanges((session) => {
+      if (!session) setAppState('unauth');
+    });
+
     const boot = async () => {
+      await refreshAuthToken();
+      const authed = await verifyToken();
+      if (!authed) {
+        setAppState('unauth');
+        return;
+      }
       await initApp();
     };
     boot();
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -572,6 +586,7 @@ function App() {
               onUpdate={handleUpdate}
               groupBySubfolder
               showInlineNotes={showInlineNotes}
+              showInboxReasons={currentProjectFilter === 'inbox'}
             />
           )}
         </>
@@ -817,6 +832,7 @@ function App() {
             viewId={currentViewId}
             onUpdate={handleUpdate}
             showInlineNotes={showInlineNotes}
+            showInboxReasons={currentFilter === 'inbox'}
           />
         )}
       </>
@@ -833,6 +849,10 @@ function App() {
         <span style={{ fontSize: '1.5rem' }}>⚡</span> Loading…
       </div>
     );
+  }
+
+  if (appState === 'unauth') {
+    return <Login onLogin={initApp} />;
   }
 
   return (
@@ -853,6 +873,17 @@ function App() {
         <div className="main-scroll">{renderView()}</div>
       </main>
       <NotificationCenter enabled={appState === 'ready'} />
+      <button
+        type="button"
+        className="auth-signout-btn"
+        onClick={async () => {
+          await logout();
+          setAppState('unauth');
+        }}
+        title="Sign out"
+      >
+        Sign out
+      </button>
       {schoolPagePopupId && (
         <div className="school-page-popout-overlay" onClick={() => setSchoolPagePopupId(null)}>
           <div

@@ -105,3 +105,22 @@
   padding: 0 18px 12px;
   background: var(--bg-body);
 }
+
+.auth-signout-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 20;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-sub);
+  cursor: pointer;
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.auth-signout-btn:hover {
+  color: var(--text-main);
+  border-color: var(--accent);
+}

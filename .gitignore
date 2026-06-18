@@ -6,7 +6,10 @@ dist
 # Local env — never commit real secrets
 .env
 
-# SQLite database (lives on the server, not in git)
+# Supabase local development artifacts
+.supabase/
+
+# Legacy local SQLite artifacts from pre-Supabase versions
 data/
 *.db
 *.db-shm
