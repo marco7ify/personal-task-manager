@@ -5,6 +5,7 @@ dist
 
 # Local env — never commit real secrets
 .env
+.worktrees/
 
 # Supabase local development artifacts
 .supabase/
