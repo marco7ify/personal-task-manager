@@ -16,10 +16,9 @@ export function BoardView({
   onToggle,
   onOpenTask
 }) {
+  // "Next 7 Days" board: columns run from today forward, matching the week filter.
   const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), diff);
+  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const createBoardCard = (item) => {
     const proj = item.pid ? Store.projects.find(p => p.id === item.pid) : null;
@@ -38,7 +37,7 @@ export function BoardView({
       </div>
     ) : null;
     const projIcon = proj ? proj.icon : '';
-    const time = item.time ? <span className="board-time">🕐 {item.time}</span> : '';
+    const time = item.time ? <span className="board-time">🕐 {item.time}</span> : null;
 
     return (
       <div
@@ -62,10 +61,13 @@ export function BoardView({
             : undefined
         }
       >
-        {check} {projIcon}
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {item.text}
-        </span>
+        <div className="board-card-top">
+          {check}
+          <span className="board-card-title" title={item.text}>
+            {projIcon && <span className="board-card-icon">{projIcon} </span>}
+            {item.text}
+          </span>
+        </div>
         {time}
       </div>
     );

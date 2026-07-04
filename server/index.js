@@ -9,16 +9,19 @@ const __dirname  = dirname(fileURLToPath(import.meta.url));
 const app        = express();
 const PORT       = process.env.PORT || 3005;
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error(
-    'Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment.'
+    'Missing Supabase configuration. Set SUPABASE_URL and a Supabase key (SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_PUBLISHABLE_KEY) in your environment.'
   );
 }
 
-const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+const authClient = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
@@ -46,6 +49,7 @@ async function requireAuth(req, res, next) {
     return;
   }
   req.user = data.user;
+  req.accessToken = token;
   next();
 }
 
@@ -56,7 +60,7 @@ app.get('/api/auth/verify', requireAuth, (_req, res) => {
 // ── Data routes ──────────────────────────────────────────────────────────────
 app.get('/api/data', requireAuth, async (req, res) => {
   try {
-    const data = await db.getAll(req.user.id);
+    const data = await db.getAll(req.user.id, req.accessToken);
     res.json(data);
   } catch (err) {
     console.error('DB read error:', err);
@@ -66,7 +70,7 @@ app.get('/api/data', requireAuth, async (req, res) => {
 
 app.post('/api/data', requireAuth, async (req, res) => {
   try {
-    await db.setAll(req.user.id, req.body);
+    await db.setAll(req.user.id, req.body, req.accessToken);
     res.json({ ok: true });
   } catch (err) {
     console.error('DB write error:', err);

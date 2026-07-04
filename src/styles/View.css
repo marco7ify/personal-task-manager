@@ -163,16 +163,27 @@
 }
 
 .task-group {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .task-group-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 0;
+  padding: 8px 4px;
+  margin-bottom: 6px;
   cursor: pointer;
   user-select: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-sub);
+}
+
+.task-group-header:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .task-group-toggle {
@@ -186,7 +197,7 @@
 }
 
 .task-group-title {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .task-group.collapsed .task-group-items {

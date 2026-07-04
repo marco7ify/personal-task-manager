@@ -1,11 +1,17 @@
 import { hasSupabaseConfig, supabase } from './supabaseClient';
 
 const TOKEN_KEY = 'ut_auth_token';
+const OFFLINE_KEY = 'ut_offline_mode';
 
 export function getToken() { return localStorage.getItem(TOKEN_KEY); }
 export function storeToken(token) { localStorage.setItem(TOKEN_KEY, token); }
 export function clearToken() { localStorage.removeItem(TOKEN_KEY); }
 export function isAuthenticated() { return !!getToken(); }
+
+/** Local-only mode: skip server auth/sync entirely and use localStorage. */
+export function isOfflineMode() { return localStorage.getItem(OFFLINE_KEY) === '1'; }
+export function enableOfflineMode() { localStorage.setItem(OFFLINE_KEY, '1'); }
+export function disableOfflineMode() { localStorage.removeItem(OFFLINE_KEY); }
 
 export async function refreshAuthToken() {
   if (!hasSupabaseConfig) return null;

@@ -1,4 +1,4 @@
-import { fetchData, saveData, isAuthenticated } from './api';
+import { fetchData, saveData, isAuthenticated, isOfflineMode } from './api';
 
 const STORAGE_KEYS = {
   items: 'ut_items_v23',
@@ -404,7 +404,7 @@ export const Store = {
   /** Load from server (async), fall back to localStorage */
   async load() {
     try {
-      if (!isAuthenticated()) { this.loadLocal(); return; }
+      if (isOfflineMode() || !isAuthenticated()) { this.loadLocal(); return; }
 
       const data = await fetchData();
       const hasServerData = Object.values(data || {}).some((value) => {
@@ -464,7 +464,7 @@ export const Store = {
 
   /** Fire-and-forget server sync */
   _syncToServer() {
-    if (!isAuthenticated()) return;
+    if (isOfflineMode() || !isAuthenticated()) return;
     saveData({
       items: this.items,
       projects: this.projects,
@@ -916,7 +916,7 @@ export const Store = {
       this.seed();
       this._postLoad();
       this._saveLocal();
-      if (isAuthenticated()) {
+      if (!isOfflineMode() && isAuthenticated()) {
         await saveData({
           items: this.items,
           projects: this.projects,

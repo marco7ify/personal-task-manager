@@ -79,7 +79,7 @@ export function ListView({
                 onToggle={onToggle}
                 onDelete={onDelete}
                 onEdit={onEdit}
-                showProject={showProject || (viewConfig?.groupBy !== 'project')}
+                showProject={showProject || (viewConfig ? viewConfig.groupBy !== 'project' : false)}
                 onUpdate={onUpdate}
                 showInlineNotes={showInlineNotes}
                 showInboxReasons={showInboxReasons}

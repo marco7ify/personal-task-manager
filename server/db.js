@@ -1,18 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const STORE_TABLE = process.env.SUPABASE_STORE_TABLE || 'app_store';
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error(
-    'Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment.'
+    'Missing Supabase configuration. Set SUPABASE_URL and a Supabase key (SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_PUBLISHABLE_KEY) in your environment.'
   );
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
-});
+/**
+ * Build a client scoped to the calling user's JWT so RLS policies apply.
+ * Works with the publishable key; a service-role key also works (bypasses RLS).
+ */
+function clientFor(accessToken) {
+  return createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: accessToken
+      ? { headers: { Authorization: `Bearer ${accessToken}` } }
+      : undefined
+  });
+}
 
 const KEYS = [
   'items',
@@ -26,8 +38,8 @@ const KEYS = [
   'resumes'
 ];
 
-export async function getAll(userId) {
-  const { data, error } = await supabase
+export async function getAll(userId, accessToken) {
+  const { data, error } = await clientFor(accessToken)
     .from(STORE_TABLE)
     .select('key, value')
     .eq('user_id', userId)
@@ -45,7 +57,7 @@ export async function getAll(userId) {
   return result;
 }
 
-export async function setAll(userId, payload) {
+export async function setAll(userId, payload, accessToken) {
   const rows = KEYS
     .filter((key) => payload[key] !== undefined)
     .map((key) => ({
@@ -56,7 +68,7 @@ export async function setAll(userId, payload) {
 
   if (rows.length === 0) return;
 
-  const { error } = await supabase
+  const { error } = await clientFor(accessToken)
     .from(STORE_TABLE)
     .upsert(rows, { onConflict: 'user_id,key' });
 

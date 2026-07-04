@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Store } from './utils/store';
-import { logout, refreshAuthToken, subscribeToAuthChanges, verifyToken } from './utils/api';
+import {
+  logout,
+  refreshAuthToken,
+  subscribeToAuthChanges,
+  verifyToken,
+  isOfflineMode,
+  disableOfflineMode
+} from './utils/api';
 import { getFilteredItems, getCounts } from './utils/filters';
 import { getNextDate, getToday, getAllowedModes } from './utils/store';
 import { Sidebar } from './components/Sidebar';
@@ -76,10 +83,14 @@ function App() {
 
   useEffect(() => {
     const subscription = subscribeToAuthChanges((session) => {
-      if (!session) setAppState('unauth');
+      if (!session && !isOfflineMode()) setAppState('unauth');
     });
 
     const boot = async () => {
+      if (isOfflineMode()) {
+        await initApp();
+        return;
+      }
       await refreshAuthToken();
       const authed = await verifyToken();
       if (!authed) {
@@ -877,12 +888,13 @@ function App() {
         type="button"
         className="auth-signout-btn"
         onClick={async () => {
+          disableOfflineMode();
           await logout();
           setAppState('unauth');
         }}
-        title="Sign out"
+        title={isOfflineMode() ? 'Exit local-only mode' : 'Sign out'}
       >
-        Sign out
+        {isOfflineMode() ? 'Exit local mode' : 'Sign out'}
       </button>
       {schoolPagePopupId && (
         <div className="school-page-popout-overlay" onClick={() => setSchoolPagePopupId(null)}>

@@ -28,8 +28,8 @@
 
 .board-card {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
   padding: 10px;
   margin-bottom: 8px;
   background: var(--bg-hover);
@@ -38,6 +38,27 @@
   font-size: 0.8rem;
   cursor: grab;
   min-width: 0;
+}
+
+.board-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.board-card-title {
+  min-width: 0;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.board-card-icon {
+  opacity: 0.9;
 }
 
 .board-card:hover {
@@ -58,7 +79,7 @@
 }
 
 .board-time {
-  margin-left: auto;
+  align-self: flex-end;
   font-size: 0.7rem;
   opacity: 0.75;
   white-space: nowrap;

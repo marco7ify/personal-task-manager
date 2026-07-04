@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { hasSupabaseConfig } from '../utils/supabaseClient';
-import { login, signUp } from '../utils/api';
+import { login, signUp, enableOfflineMode } from '../utils/api';
 import '../styles/Login.css';
 
 export function Login({ onLogin }) {
@@ -87,6 +87,17 @@ export function Login({ onLogin }) {
             }}
           >
             {mode === 'signup' ? 'Have an account? Sign in' : 'Need an account? Sign up'}
+          </button>
+          <button
+            type="button"
+            className="login-link-btn subtle"
+            disabled={loading}
+            onClick={() => {
+              enableOfflineMode();
+              onLogin();
+            }}
+          >
+            Continue without an account (local only)
           </button>
         </form>
       </div>

@@ -14,9 +14,9 @@ export function TaskRow({
   showInboxReasons = false
 }) {
   const project = item.pid ? Store.projects.find(p => p.id === item.pid) : null;
-  const bgColor = project
-    ? `rgba(${hexToRgba(project.color)}, ${getPriorityAlpha(item.priority || 'low')})`
-    : 'transparent';
+  const accentColor = item.type === 'event'
+    ? 'var(--event-color)'
+    : (project?.color || 'var(--border)');
 
   const isVirtual = !!item.__virtual;
   const inlineProperties = getInlineProperties(ENTITY_TYPES.TASK);
@@ -205,8 +205,8 @@ export function TaskRow({
 
   return (
     <div
-      className={`task-row ${item.done ? 'done' : ''}`}
-      style={{ background: bgColor }}
+      className={`task-row prio-${priority} ${item.type === 'event' ? 'is-event' : ''} ${item.done ? 'done' : ''}`}
+      style={{ '--row-accent': accentColor }}
       data-id={item.id}
       data-virtual={isVirtual ? '1' : undefined}
     >
@@ -461,20 +461,6 @@ export function TaskRow({
       )}
     </div>
   );
-}
-
-function hexToRgba(hex) {
-  if (!hex) return '50,50,50';
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r},${g},${b}`;
-}
-
-function getPriorityAlpha(priority) {
-  if (priority === 'high') return 0.35;
-  if (priority === 'medium') return 0.1;
-  return 0.02;
 }
 
 function getInboxReasonBadges(item, subtasks) {
