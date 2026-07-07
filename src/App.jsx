@@ -29,6 +29,7 @@ import { DailyReviewView } from './components/DailyReviewView';
 import { StudyQueueView } from './components/StudyQueueView';
 import { HelpView } from './components/HelpView';
 import { NotificationCenter } from './components/NotificationCenter';
+import { SyncIndicator } from './components/SyncIndicator';
 import { Login } from './components/Login';
 import { getSemesters, isCourseProject, UNASSIGNED_SEMESTER_ID } from './utils/school';
 import { ListView } from './components/views/ListView';
@@ -884,6 +885,7 @@ function App() {
         <div className="main-scroll">{renderView()}</div>
       </main>
       <NotificationCenter enabled={appState === 'ready'} />
+      <SyncIndicator />
       <button
         type="button"
         className="auth-signout-btn"

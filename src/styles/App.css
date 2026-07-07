@@ -106,6 +106,46 @@
   background: var(--bg-body);
 }
 
+.sync-indicator {
+  position: fixed;
+  right: 16px;
+  bottom: 58px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-sub);
+  font-size: 0.75rem;
+  cursor: default;
+  user-select: none;
+}
+
+.sync-indicator.sync-error {
+  border-color: rgba(255, 85, 85, 0.45);
+  color: var(--danger);
+  background: rgba(255, 85, 85, 0.08);
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sync-dot-gray { background: var(--text-sub); }
+.sync-dot-blue { background: var(--accent); }
+.sync-dot-green { background: var(--success); }
+.sync-dot-red { background: var(--danger); }
+
+.sync-time {
+  opacity: 0.7;
+}
+
 .auth-signout-btn {
   position: fixed;
   right: 16px;

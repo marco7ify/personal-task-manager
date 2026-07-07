@@ -1,4 +1,5 @@
 import { fetchData, saveData, isAuthenticated, isOfflineMode } from './api';
+import { setSyncStatus } from './syncStatus';
 
 const STORAGE_KEYS = {
   items: 'ut_items_v23',
@@ -404,9 +405,15 @@ export const Store = {
   /** Load from server (async), fall back to localStorage */
   async load() {
     try {
-      if (isOfflineMode() || !isAuthenticated()) { this.loadLocal(); return; }
+      if (isOfflineMode() || !isAuthenticated()) {
+        setSyncStatus('local');
+        this.loadLocal();
+        return;
+      }
 
+      setSyncStatus('syncing');
       const data = await fetchData();
+      setSyncStatus('synced');
       const hasServerData = Object.values(data || {}).some((value) => {
         if (Array.isArray(value)) return value.length > 0;
         if (value && typeof value === 'object') return Object.keys(value).length > 0;
@@ -441,6 +448,7 @@ export const Store = {
       this._saveLocal();
     } catch (e) {
       console.warn('Server load failed — using localStorage:', e.message);
+      setSyncStatus('error', { error: e.message });
       this.loadLocal();
     }
   },
@@ -464,7 +472,11 @@ export const Store = {
 
   /** Fire-and-forget server sync */
   _syncToServer() {
-    if (isOfflineMode() || !isAuthenticated()) return;
+    if (isOfflineMode() || !isAuthenticated()) {
+      setSyncStatus('local');
+      return;
+    }
+    setSyncStatus('syncing');
     saveData({
       items: this.items,
       projects: this.projects,
@@ -477,13 +489,17 @@ export const Store = {
       resumes: this.resumes || [],
     })
       .then(() => {
+        setSyncStatus('synced');
         try {
           localStorage.setItem(STORAGE_KEYS.serverSynced, String(Date.now()));
         } catch {
           // Sync succeeded; marker persistence is best effort.
         }
       })
-      .catch(err => console.warn('Server save failed:', err.message));
+      .catch(err => {
+        console.warn('Server save failed:', err.message);
+        setSyncStatus('error', { error: err.message });
+      });
   },
 
   /** Save: instant localStorage + background server sync */
